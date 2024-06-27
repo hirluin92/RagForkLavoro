@@ -1,0 +1,209 @@
+{
+  "@odata.context": "https://genaiplt-search-dev.search.windows.net/$metadata#skillsets/$entity",
+  "@odata.etag": "\"0x8DC894FB12AF9FA\"",
+  "name": "skillset-files",
+  "description": "skillset: built-in chunking, compute embedding, key_phrases extraction for all files excluded pdf.",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
+      "name": "#1A-ChunkingSkill",
+      "description": "Level 1: This built-in skill splits file into defined chunks.",
+      "context": "/document",
+      "defaultLanguageCode": "it",
+      "textSplitMode": "pages",
+      "maximumPageLength": 3000,
+      "pageOverlapLength": 600,
+      "maximumPagesToTake": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/content"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "textItems",
+          "targetName": "chunkItems"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+      "name": "#2A-EmbeddingSkill",
+      "description": "Level 2: This built-in skill compute the embedding of each document inside the index using OpenAI embedding model.",
+      "context": "/document/chunkItems/*",
+      "resourceUri": "https://genaiplt-openai-dev.openai.azure.com",
+      "apiKey": "7aa1fc0fa63f4a859850d2d47197e28b",
+      "deploymentId": "text-embedding-ada-002",
+      "dimensions": 1536,
+      "modelName": "text-embedding-ada-002",
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/chunkItems/*"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "embedding",
+          "targetName": "chunk_vector"
+        }
+      ],
+      "authIdentity": null
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.KeyPhraseExtractionSkill",
+      "name": "#2B-KeyPhraseSkill",
+      "description": "Level 2: This built-in skill uses a pretrained model to detect important key phrases.",
+      "context": "/document/chunkItems/*",
+      "defaultLanguageCode": "it",
+      "maxKeyPhraseCount": 10,
+      "modelVersion": null,
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/chunkItems/*"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "keyPhrases",
+          "targetName": "keyPhrases"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
+      "name": "#2C-TaggingSkill",
+      "description": "Level 2: This custom skill gets tags (folder name) from storage path",
+      "context": "/document/chunkItems/*",
+      "uri": "https://genaiplt-function-app-dev.azurewebsites.net/api/tagging",
+      "httpMethod": "POST",
+      "timeout": "PT1M",
+      "batchSize": 1,
+      "degreeOfParallelism": 1,
+      "authResourceId": null,
+      "inputs": [
+        {
+          "name": "fileUrl",
+          "source": "/document/metadata_storage_path"
+        },
+        {
+          "name": "fileSasToken",
+          "source": "/document/metadata_storage_sas_token"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "folders",
+          "targetName": "storageTags"
+        },
+        {
+          "name": "sqlDocumentId",
+          "targetName": "consoleFileId"
+        }
+      ],
+      "httpHeaders": {},
+      "authIdentity": null
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
+      "name": "#3A-MoveFilesSkill",
+      "description": "Level 1: This custom skill move files from data-source to container",
+      "context": "/document/chunkItems/*/storageTags",
+      "uri": "https://genaiplt-function-app-dev.azurewebsites.net/api/moveFiles",
+      "httpMethod": "POST",
+      "timeout": "PT1M",
+      "batchSize": 1,
+      "degreeOfParallelism": 1,
+      "authResourceId": null,
+      "inputs": [
+        {
+          "name": "fileUrl",
+          "source": "/document/metadata_storage_path"
+        },
+        {
+          "name": "fileSasToken",
+          "source": "/document/metadata_storage_sas_token"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "blobName",
+          "targetName": "blobName"
+        }
+      ],
+      "httpHeaders": {},
+      "authIdentity": null
+    }
+  ],
+  "cognitiveServices": {
+    "@odata.type": "#Microsoft.Azure.Search.CognitiveServicesByKey",
+    "description": null,
+    "key": "c76254b066fa4b47b988fa0f081d6b88"
+  },
+  "knowledgeStore": null,
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "data-prestazioni-index",
+        "parentKeyFieldName": "parent_id",
+        "sourceContext": "/document/chunkItems/*",
+        "mappings": [
+          {
+            "name": "chunk_text",
+            "source": "/document/chunkItems/*",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "chunk_text_vector",
+            "source": "/document/chunkItems/*/chunk_vector",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "key_phrases",
+            "source": "/document/chunkItems/*/keyPhrases",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "filename",
+            "source": "/document/metadata_storage_name",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "datetime_upload",
+            "source": "/document/metadata_storage_last_modified",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "tags",
+            "source": "/document/chunkItems/*/storageTags",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "console_file_id",
+            "source": "/document/chunkItems/*/consoleFileId",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "blob_name",
+            "source": "/document/chunkItems/*/storageTags/blobName",
+            "sourceContext": null,
+            "inputs": []
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "projectionMode": "skipIndexingParentDocuments"
+    }
+  },
+  "encryptionKey": null
+}

@@ -1,0 +1,19 @@
+{
+    "@odata.context": "https://genaiplt-search-dev.search.windows.net/$metadata#datasources/$entity",
+    "@odata.etag": "\"0x8DC86D11EF945B3\"",
+    "name": "data-source-split-files",
+    "description": null,
+    "type": "azureblob",
+    "subtype": null,
+    "credentials": {
+      "connectionString": "DefaultEndpointsProtocol=https;AccountName=genaipltstdev;AccountKey=vtPPxX2AOkE898SAmG+IneKRd4+yA1l2akXY6THjytAr2szp2pcW2BPLweZ40+8YVeMiPz2RNRxt+AStpUbrMw==;EndpointSuffix=core.windows.net"
+    },
+    "container": {
+      "name": "data-source-split-files",
+      "query": null
+    },
+    "dataChangeDetectionPolicy": null,
+    "dataDeletionDetectionPolicy": null,
+    "encryptionKey": null,
+    "identity": null
+  }

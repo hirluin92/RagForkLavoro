@@ -1,0 +1,24 @@
+{
+  "@odata.context": "https://genaiplt-search-dev.search.windows.net/$metadata#indexers/$entity",
+  "@odata.etag": "\"0x8DC8A1A6F133048\"",
+  "name": "indexer-files",
+  "description": "",
+  "dataSourceName": "data-source-files",
+  "skillsetName": "skillset-files",
+  "targetIndexName": "data-prestazioni-index",
+  "disabled": null,
+  "schedule": null,
+  "parameters": {
+    "batchSize": null,
+    "maxFailedItems": null,
+    "maxFailedItemsPerBatch": null,
+    "base64EncodeKeys": null,
+    "configuration": {
+      "excludedFileNameExtensions": ".pdf"
+    }
+  },
+  "fieldMappings": [],
+  "outputFieldMappings": [],
+  "cache": null,
+  "encryptionKey": null
+}
