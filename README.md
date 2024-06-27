@@ -6,5 +6,5 @@ Resource Group: AZ00040-ts-we-rgp
 
 Nome Function: AZ00040-genaitest-funapp-rag
 
-Runtime Stack: Python 3.11
+Runtime Stack: Python 3.10
 
