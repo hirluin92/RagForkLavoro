@@ -245,7 +245,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     mock_language_service = mocker.Mock(spec=AiQueryServiceBase)
     mock_language_service.a_do_query_enrichment.return_value = mocker.Mock(standalone_question="Cos'è l'assegno unico?",
                                                                                        end_conversation= False)
-    mock_language_service.a_do_query.return_value = RagQueryResponse("L'assegno unico è un ....", "stop", None, None, None, None, None)
+    mock_language_service.a_do_query.return_value = RagQueryResponse("L'assegno unico è un ....",[], "stop", None, None, None, None, None)
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
     request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ])

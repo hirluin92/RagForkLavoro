@@ -8,18 +8,21 @@ class BestDocument():
                  tags: str,
                  path: str,
                  similarity: float,
-                 chunkText: str):
+                 chunkText: str,
+                 reference: int):
         self.id = id
         self.source_file_id = sourceFileID
         self.filename = fileName
         self.tags = tags
         self.path = path
         self.similarity = similarity
-        self.chunk_text = chunkText
+        self.chunk_text = chunkText,
+        self.reference = reference
         
 
 class RagQueryResponse():
     def __init__(self, response:str,
+                 references: list[int],
                  finishReason: str,
                  links: list[str],
                  referenceSources: bool,
@@ -27,6 +30,7 @@ class RagQueryResponse():
                  context: list[str],
                  bestDocuments: list[BestDocument]) -> None:
         self.response=response
+        self.references=references
         self.finish_reason=finishReason
         self.links=links
         self.reference_sources=referenceSources

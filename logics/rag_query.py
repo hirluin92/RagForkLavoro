@@ -32,6 +32,7 @@ async def a_execute_query(llm_model_id: str,
 
     if len(search_result_context) == 0:
         return RagQueryResponse(llm_const.default_answer,
+                                [],
                                 "",
                                 [],
                                 False,
@@ -45,6 +46,7 @@ async def a_execute_query(llm_model_id: str,
         response_from_llm, search_result_context)
     response_to_return = response_for_user[0]
     links_to_return = response_for_user[1]
+    references_to_return = response_for_user[2]
 
     context_ids_to_return = []
     context_to_return = []
@@ -59,10 +61,12 @@ async def a_execute_query(llm_model_id: str,
             item.tags,
             "",
             item.score,
-            item.chunk
+            item.chunk,
+            item.reference
         )
         best_documents_to_return.append(best_document)
     return RagQueryResponse(response_to_return,
+                            references_to_return,
                             finish_reason,
                             links_to_return,
                             len(context_ids_to_return) > 0,
@@ -125,7 +129,7 @@ async def a_get_response_from_llm(llm_model_id: str,
                                               logger)
 
 def build_response_for_user(rag_response: RagResponse,
-                            context: list[RagContextContent]) -> tuple[str, list[str]]:
+                            context: list[RagContextContent]) -> tuple[str, list[str], list[int]]:
     if len(rag_response.references) > 0:
         documents: list[str] = []
         for reference in rag_response.references:
@@ -134,7 +138,7 @@ def build_response_for_user(rag_response: RagResponse,
             if filename_to_add:
                 documents.append(filename_to_add.filename)
         if len(documents) > 0 and len(documents) == len(rag_response.references):
-            return (rag_response.response, documents)
+            return (rag_response.response, documents, rag_response.references)
         elif len(documents) != len(rag_response.references):
             errMsg = """Bad answer from llm. 
             Number of references:  {references}. 
@@ -142,4 +146,4 @@ def build_response_for_user(rag_response: RagResponse,
             raise Exception(errMsg.format(references = len(rag_response.references),
                                           documents = len(documents)))
 
-    return (llm_const.default_answer, [])
+    return (llm_const.default_answer, [], [])
