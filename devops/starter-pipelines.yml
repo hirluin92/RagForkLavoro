@@ -1,7 +1,7 @@
 name: $(Date:yyyyMMdd)$(rev:.r)
 
 variables:
-- group: AZ00040_funapp-mng-TEST
+- group: AZ00040_funapp-rag-TEST
 
 trigger:
  batch: true
@@ -23,7 +23,7 @@ resources:
 stages: 
 - template: build-stages/frontend/2.0/pyhton-build-stages-fe.yaml@CommonTemplates
   parameters:
-    commonVariableGroup: AZ00040_funapp-mng-TEST
+    commonVariableGroup: AZ00040_funapp-rag-TEST
     linuxPoolName: linuxpoolcontainersvil
     zipArtifacts: true
     skipTestReport: true #da impostare a false quando il team mette a posto i TEST unitari
@@ -56,7 +56,7 @@ stages:
 
 - template: release-stages/azure/release-stages.yaml@CommonTemplates
   parameters:
-    commonVariableGroup: AZ00040_funapp-mng-TEST
+    commonVariableGroup: AZ00040_funapp-rag-TEST
     winAgentName: AZUBUILDER-P01
     runtimeStack: 'PYTHON|3.11'
     deploymentMethod: 'runFromPackage'
