@@ -2,6 +2,11 @@ import azure.functions as func
 from services.storage import a_upload_txt_to_blob, a_delete_blob_from_container
 from utils.settings import get_storage_settings
 
+
+def custom_chunking() -> list[str]:
+    chunks = { "chunk1", "chunk2" }
+    return chunks
+
 async def a_split_data_into_chunks(myblob: func.InputStream) -> int: 
     storageSettings = get_storage_settings()
     dest_container = storageSettings.data_source_split_files_container
