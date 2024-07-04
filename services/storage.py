@@ -40,7 +40,7 @@ async def a_get_blob_content_from_container(container: str, filename: str):
 
     return blob_text
 
-def get_blob_info_for_move(url_source: str) -> tuple[str, str]:
+def get_blob_info_container_and_blobName(url_source: str) -> tuple[str, str]:
     """
     Get the container and the name of a blob
     """

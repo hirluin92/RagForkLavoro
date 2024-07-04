@@ -7,17 +7,19 @@ from models.apis.chunking_empty_rows_request_body import ChunkingEmptyRowsReques
 from logics.split_data import a_custom_chunking
 from services.logging import LoggerBuilder
 from utils.http_problem import Problem
+import constants.event_types as event_types
 
 bp = func.Blueprint()
 
 
 @bp.route(route="chunkingEmptyRows", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
-async def chunking(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
+async def chunkingEmptyRows(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Chunking Empty Rows request.')
         try:
             req_body = req.get_json()
             request_body = ChunkingEmptyRowsRequestBody.model_validate(req_body)
+            filenames = [item.data.fileUrl for item in request_body.values]
             results = await a_custom_chunking(request_body, logger)
             return func.HttpResponse(results.toJSON(), mimetype='application/json')
         except ValidationError as e:
@@ -27,6 +29,7 @@ async def chunking(req: func.HttpRequest, context: func.Context) -> func.HttpRes
                                      mimetype="application/problem+json")
         except Exception as e:
             logger.exception(e.args[0])
+            logger.track_event(event_types.split_data_exception, {"filesUrl":f"{filenames}"})
             problem = Problem(500, "Internal server error",
                               e.args[0], None, None)
             return func.HttpResponse(

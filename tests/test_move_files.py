@@ -16,7 +16,7 @@ def test_get_blob_info_for_move_ok():
     source = fileUrl + fileSasToken
 
     # Act
-    result = get_blob_info_for_move(source)
+    result = get_blob_info_container_and_blobName(source)
 
     # Assert expected output
     assert len(result) == 2
