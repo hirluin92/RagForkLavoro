@@ -12,6 +12,7 @@ from services.logging import LoggerBuilder
 from utils.settings import (
     get_mistralai_settings,
     get_openai_settings,
+    get_prompt_settings,
     get_search_settings,
     get_storage_settings
     )
@@ -26,6 +27,7 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
         try:
             get_mistralai_settings()
             get_openai_settings()
+            get_prompt_settings()
             get_search_settings()
             get_storage_settings()
         except ValidationError as e:

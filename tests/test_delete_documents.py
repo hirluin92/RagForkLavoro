@@ -1,5 +1,4 @@
 
-import aiohttp
 import azure.functions as func
 import pytest
 from delete_documents import deleteDocuments
@@ -7,23 +6,10 @@ from logics.delete_documents import a_delete_by_tag
 from services.search import a_delete_document_by_id, a_get_documents_by_tag
 from services.storage import a_delete_blob_from_container
 from tests.mock_aiohttp import MockClientResponse, MockClientSession
+from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 from utils.settings import get_search_settings, get_storage_settings
 
-
-def set_mock_env(monkeypatch):
-    monkeypatch.setenv('AZURE_SEARCH_API_VERSION', 'version')
-    monkeypatch.setenv('AZURE_SEARCH_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_SEARCH_INDEX', 'index')
-    monkeypatch.setenv('AZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION', 'semantic-configuration')
-    monkeypatch.setenv('AZURE_SEARCH_K', "10")
-    monkeypatch.setenv('AZURE_SEARCH_KEY', 'key')
-    monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_DATA_SOURCE_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_CONNECTION_STRING', 'connection_string')
-    monkeypatch.setenv('STORAGE_PROMPT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
 
 @pytest.mark.asyncio
 async def test_delete_blob_from_container_ok(mocker, monkeypatch):

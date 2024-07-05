@@ -1,0 +1,2 @@
+Links in your [ANSWER] should be reported formatted in markdown: enclose the link text in brackets ([Click here]) and then follow it immediately with the URL provided by the [CONTEXT] in parentheses.
+The link text must be the following text: 'clicca qui'.

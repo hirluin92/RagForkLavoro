@@ -1,5 +1,5 @@
 from datetime import *
-from functools import cache
+from functools import cache, lru_cache
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
 from utils.settings import get_storage_settings
 

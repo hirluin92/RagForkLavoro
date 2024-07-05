@@ -3,6 +3,7 @@ from models.configurations.cqa import CQASettings
 from models.configurations.document_intelligence import DocumentIntelligenceSettings
 from models.configurations.mistralai import MistralAISettings
 from models.configurations.openai import OpenAISettings
+from models.configurations.prompt import PromptSettings
 from models.configurations.search import SearchSettings
 from models.configurations.storage import BlobStorageSettings
 
@@ -29,3 +30,7 @@ def get_search_settings():
 @lru_cache
 def get_storage_settings():
     return BlobStorageSettings()
+
+@lru_cache
+def get_prompt_settings():
+    return PromptSettings()

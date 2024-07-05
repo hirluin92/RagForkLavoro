@@ -3,24 +3,11 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 import pytest
 
+from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
 from services.mistralai import (a_get_answer_from_context as mistralai_get_answer_from_context, 
                                 a_get_enriched_query as mistralai_get_enriched_query
                                 )
-
-
-def set_mock_env(monkeypatch):
-    monkeypatch.setenv('AZURE_MISTRALAI_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_MISTRALAI_KEY', 'key')
-    monkeypatch.setenv('AZURE_MISTRALAI_MODEL', 'model')
-    monkeypatch.setenv('AZURE_MISTRALAI_TEMPERATURE', '0')
-    monkeypatch.setenv('AZURE_MISTRALAI_TOKENS', '2000')
-    monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_DATA_SOURCE_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_CONNECTION_STRING', 'connection_string')
-    monkeypatch.setenv('STORAGE_PROMPT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
 
 @pytest.fixture
 def mock_chat_prompt_template(mocker):
@@ -62,6 +49,7 @@ async def test_mistralai_get_answer_from_context(mocker,
     result = await mistralai_get_answer_from_context(question,
                                                context,
                                                "SYSTEM_PROMPT",
+                                               "SYSTEM_LINKS_PROMPT",
                                                "USER_PROMPT",
                                                mock_logger)
 
