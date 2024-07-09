@@ -7,24 +7,8 @@ from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context,
     a_get_enriched_query as openai_get_enriched_query
     )
+from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
-
-def set_mock_env(monkeypatch):
-    monkeypatch.setenv('AZURE_OPENAI_API_VERSION', 'version')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_KEY', 'key')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_TOKENS', "2000")
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_TEMPERATURE', "0")
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_DEPLOYMENT_MODEL', 'model')
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_KEY', 'kery')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_DEPLOYMENT_MODEL', 'model')
-    monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_DATA_SOURCE_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_CONNECTION_STRING', 'connection_string')
-    monkeypatch.setenv('STORAGE_PROMPT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
 
 @pytest.fixture
 def mock_chat_prompt_template(mocker):
@@ -66,6 +50,7 @@ async def test_openai_get_answer_from_context(mocker,
     result = await openai_get_answer_from_context(question,
                                             context,
                                             "SYSTEM_PROMPT",
+                                            "SYSTEM_LINKS_PROMPT",
                                             "USER_PROMPT",
                                             mock_logger)
 

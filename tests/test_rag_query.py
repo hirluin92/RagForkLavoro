@@ -8,6 +8,7 @@ from logics.rag_query import (
 from rag_query import a_query as rag_query_endpoint
 from services.search import a_query
 from tests.mock_aiohttp import MockClientResponse, MockClientSession
+from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 import constants.llm as llm_const
 from utils.settings import (
@@ -16,37 +17,6 @@ from utils.settings import (
     get_search_settings,
     get_storage_settings
     )
-
-
-def set_mock_env(monkeypatch):
-    monkeypatch.setenv('AZURE_MISTRALAI_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_MISTRALAI_KEY', 'key')
-    monkeypatch.setenv('AZURE_MISTRALAI_MODEL', 'model')
-    monkeypatch.setenv('AZURE_MISTRALAI_TEMPERATURE', '0')
-    monkeypatch.setenv('AZURE_MISTRALAI_TOKENS', '2000')
-    monkeypatch.setenv('AZURE_OPENAI_API_VERSION', 'version')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_KEY', "key")
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_TOKENS', "2000")
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_TEMPERATURE', "0")
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_DEPLOYMENT_MODEL', 'model')
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_OPENAI_EMBEDDING_KEY', 'key')
-    monkeypatch.setenv('AZURE_OPENAI_COMPLETION_DEPLOYMENT_MODEL', 'model')
-    monkeypatch.setenv('AZURE_OPENAI_KEY', 'kery')
-    monkeypatch.setenv('AZURE_SEARCH_API_VERSION', 'version')
-    monkeypatch.setenv('AZURE_SEARCH_ENDPOINT', 'endpoint')
-    monkeypatch.setenv('AZURE_SEARCH_INDEX', 'index')
-    monkeypatch.setenv(
-        'AZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION', 'semantic-configuration')
-    monkeypatch.setenv('AZURE_SEARCH_K', "10")
-    monkeypatch.setenv('AZURE_SEARCH_KEY', 'key')
-    monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_DATA_SOURCE_SPLIT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_CONNECTION_STRING', 'connection_string')
-    monkeypatch.setenv('STORAGE_PROMPT_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
-    monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
 
 def test_build_response_for_user_rag_response_empty(mocker):
     # Arrange
@@ -249,7 +219,7 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
 
     mocker.patch(
         "logics.rag_query.a_get_blob_content_from_container",
-        side_effect=["SYSTEM_PROMPT", "USER_PROMPT"]
+        side_effect=["SYSTEM_PROMPT", "USER_PROMPT", "SYSTEM_LINKS_PROMPT"]
     )
 
     mock_rag_response = mocker.Mock()
@@ -297,7 +267,7 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
 
     mocker.patch(
         "logics.rag_query.a_get_blob_content_from_container",
-        side_effect=["SYSTEM_PROMPT", "USER_PROMPT"]
+        side_effect=["SYSTEM_PROMPT", "USER_PROMPT", "SYSTEM_LINKS_PROMPT"]
     )
 
     mock_rag_response = mocker.Mock()

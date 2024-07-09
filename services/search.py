@@ -9,57 +9,6 @@ import constants.event_types as event_types
 from services.logging import Logger
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
 
-@retry(
-    retry=retry_if_http_error(),
-    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
-    stop=stop_after_attempt(3),
-    reraise=True
-)
-async def a_delete_document_by_id(session: ClientSession,
-                                  id: str):
-    settings = SearchSettings()
-    index = settings.index
-    headers = {'Content-Type': 'application/json', 'api-key': settings.key}
-    params = {'api-version': settings.api_version}
-    payload = {
-        "value": [{
-            "@search.action": "delete",
-            "chunk_id": id
-        }]
-    }
-
-    data = json.dumps(payload)
-    endpoint = settings.endpoint + "/indexes/" + index + "/docs/index"
-    await session.post(endpoint,
-                            data=data,
-                            headers=headers,
-                            params=params)
-
-@retry(
-    retry=retry_if_http_error(),
-    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
-    stop=stop_after_attempt(3),
-    reraise=True
-)
-async def a_get_documents_by_tag(session: ClientSession,
-                                 tag: str) -> SearchDocumentsResponse:
-    """
-    Get all the documents that have a specific tag
-    """
-    settings = SearchSettings()
-    index: str = settings.index
-    filter: str = "tags/any(t: search.in(t, '{tag}'))"
-    headers = {'Content-Type': 'application/json', 'api-key': settings.key}
-    params = {
-        'api-version': settings.api_version,
-        '$count': "true",
-        '$select': "chunk_id,tags,filename,blob_name",
-        '$filter': filter.format(tag=tag)
-    }
-
-    async with session.get(settings.endpoint + "/indexes('" + index + "')/docs",
-                        headers=headers, params=params) as result:
-        return SearchDocumentsResponse.from_dict(await result.json())
 
 @retry(
     retry=retry_if_http_error(),

@@ -11,6 +11,7 @@ from utils.settings import (
     get_cqa_settings,
     get_mistralai_settings,
     get_openai_settings,
+    get_prompt_settings,
     get_search_settings,
     get_storage_settings)
 
@@ -24,6 +25,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
         try:
             get_cqa_settings()
             get_mistralai_settings()
+            get_prompt_settings()
             get_openai_settings()
             get_search_settings()
             get_storage_settings()

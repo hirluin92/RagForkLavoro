@@ -17,7 +17,7 @@ from services.search import a_query as query_azure_ai_search
 import constants.llm as llm_const
 import constants.prompt as prompt_const
 from services.storage import a_get_blob_content_from_container
-from utils.settings import get_storage_settings
+from utils.settings import get_prompt_settings, get_storage_settings
 
 
 async def a_execute_query(llm_model_id: str,
@@ -99,14 +99,23 @@ async def a_get_response_from_llm(llm_model_id: str,
                           question: str,
                           context: List[RagContextContent],
                           logger) -> RagResponse:
-    storageSettings = get_storage_settings()
-    system_prompt = await a_get_blob_content_from_container(storageSettings.prompt_files_container,
-                                                        prompt_const.ANSWER_GENERATION_SYSTEM_PROMPT)
-    user_prompt = await a_get_blob_content_from_container(storageSettings.prompt_files_container,
-                                                        prompt_const.ANSWER_GENERATION_USER_PROMPT)
+    prompt_settings = get_prompt_settings()
+    storage_settings = get_storage_settings()
+    system_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
+                                                        prompt_const.ANSWER_GENERATION_SYSTEM)
+    user_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
+                                                        prompt_const.ANSWER_GENERATION_USER)
     
+    system_links_prompt_name = prompt_const.PARTIAL_LINKS
+    if prompt_settings.answer_generation_markdown_enabled:
+        system_links_prompt_name = prompt_const.PARTIAL_LINKS_MARKDOWN
+
+    system_links_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
+                                                        system_links_prompt_name)
+
     data_to_log = {
         "systemPrompt": system_prompt,
+        "systemLinksPrompt": system_links_prompt,
         "humanPrompt": user_prompt,
         "question": question,
     }
@@ -119,12 +128,14 @@ async def a_get_response_from_llm(llm_model_id: str,
         return await mistralai_get_answer_from_context(question,
                                                  context,
                                                  system_prompt,
+                                                 system_links_prompt,
                                                  user_prompt,
                                                  logger)
     else:
         return await openai_get_answer_from_context(question,
                                               context,
                                               system_prompt,
+                                              system_links_prompt,
                                               user_prompt, 
                                               logger)
 
