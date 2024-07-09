@@ -25,7 +25,7 @@ async def a_delete_blob_from_container(container: str, filename: str):
     if await blob_client.exists():
         await blob_client.delete_blob(delete_snapshots="include")
         return True
-    
+    await blob_client.close()
     return False
 
 async def a_get_blob_content_from_container(container: str, filename: str):
@@ -37,7 +37,7 @@ async def a_get_blob_content_from_container(container: str, filename: str):
                                                       filename)
     downloader = await blob_client.download_blob(max_concurrency=1, encoding='UTF-8')
     blob_text = await downloader.readall()
-
+    await blob_client.close()
     return blob_text
 
 def get_blob_info_container_and_blobName(url_source: str) -> tuple[str, str]:
@@ -47,13 +47,29 @@ def get_blob_info_container_and_blobName(url_source: str) -> tuple[str, str]:
     blob_client = BlobClient.from_blob_url(url_source)
     return (blob_client.container_name, blob_client.blob_name)
 
-async def a_get_blob_info_for_tagging(url_source: str) -> tuple[str, dict[str, str]]:
+async def a_get_blobName_and_metadata_for_tagging(url_source: str) -> tuple[str, dict[str, str]]:
     """
     Get the container and the metadata of a blob
     """
     blob_client = BlobClient.from_blob_url(url_source)
     blob_properties = await blob_client.get_blob_properties()
+    await blob_client.close()
     return (blob_properties.name, blob_properties.metadata)
+
+async def a_create_metadata_on_blob(url_source: str, metadataKey: str, metadataValue: str):
+    """
+    Add new metadata on the blob
+    """
+    blob_service_client = get_blob_service_client()
+    (container, filename) = get_blob_info_container_and_blobName(url_source)
+    blob_client = blob_service_client.get_blob_client(container,
+                                                      filename)
+    properties = await blob_client.get_blob_properties()
+    blob_metadata = properties.metadata
+    more_blob_metadata = {metadataKey: metadataValue}
+    blob_metadata.update(more_blob_metadata)
+    await blob_client.set_blob_metadata(metadata=blob_metadata)
+    await blob_client.close()
 
 async def a_move_blob(blobNamePath: str, from_container: str, to_container: str):
     """
@@ -66,6 +82,8 @@ async def a_move_blob(blobNamePath: str, from_container: str, to_container: str)
         dest_blob = blob_service_client.get_blob_client(to_container, blobNamePath)
         await dest_blob.start_copy_from_url(source_blob.url)
         await source_blob.delete_blob(delete_snapshots="include")
+        await source_blob.close()
+        await dest_blob.close()
         return True
     
     return False
@@ -78,3 +96,4 @@ async def a_upload_txt_to_blob(container: str, blob_name_path: str, text: str):
     blob_client = blob_service_client.get_blob_client(
         container, blob_name_path)
     await blob_client.upload_blob(data=text)
+    await blob_client.close()

@@ -4,7 +4,7 @@ import pytest
 import azure.functions as func
 from tagging import tagging
 from logics.tagging import a_get_files_tags, a_get_tags_from_blob_info
-from services.storage import a_get_blob_info_for_tagging
+from services.storage import a_get_blobName_and_metadata_for_tagging
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 
 @pytest.fixture
@@ -28,7 +28,7 @@ async def test_get_blob_info_for_tagging_ok(mocker, mock_tagging_client):
     )
 
     # Act
-    result = await a_get_blob_info_for_tagging("fileUrl")
+    result = await a_get_blobName_and_metadata_for_tagging("fileUrl")
 
     # Assert expected output
     assert len(result) == 2
