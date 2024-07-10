@@ -16,7 +16,7 @@ bp = func.Blueprint()
 async def metadataTagging(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Metadata tagging request.')
-
+        filenames = []
         try:
             req_body = req.get_json()
             request_body = TaggingRequestBody.model_validate(req_body)
@@ -30,7 +30,8 @@ async def metadataTagging(req: func.HttpRequest, context: func.Context) -> func.
                                      mimetype="application/problem+json")
         except Exception as e:
             logger.exception(e.args[0])
-            logger.track_event(event_types.metadata_tagging_exception, {"filesUrl":f"{filenames}"})
+            if len(filenames) > 0: 
+                logger.track_event(event_types.metadata_tagging_exception, {"filesUrl":f"{filenames}"})
             problem = Problem(500, "Internal server error",
                               e.args[0], None, None)
             return func.HttpResponse(

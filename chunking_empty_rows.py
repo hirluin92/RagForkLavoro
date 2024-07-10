@@ -16,6 +16,7 @@ bp = func.Blueprint()
 async def chunkingEmptyRows(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Chunking Empty Rows request.')
+        filenames = []
         try:
             req_body = req.get_json()
             request_body = ChunkingEmptyRowsRequestBody.model_validate(req_body)
@@ -29,7 +30,8 @@ async def chunkingEmptyRows(req: func.HttpRequest, context: func.Context) -> fun
                                      mimetype="application/problem+json")
         except Exception as e:
             logger.exception(e.args[0])
-            logger.track_event(event_types.split_data_exception, {"filesUrl":f"{filenames}"})
+            if len(filenames) > 0: 
+                logger.track_event(event_types.split_data_exception, {"filesUrl":f"{filenames}"})
             problem = Problem(500, "Internal server error",
                               e.args[0], None, None)
             return func.HttpResponse(
