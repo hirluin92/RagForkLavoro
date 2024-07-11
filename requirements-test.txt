@@ -1,9 +1,12 @@
 aiodns==3.2.0
 aiohttp==3.9.5
 azure-functions==1.19.0
+azure-ai-language-questionanswering==1.1.0
+azure-ai-documentintelligence==1.0.0b3
+azure-storage-blob==12.20.0
 azure-monitor-opentelemetry==1.4.1
 azure-monitor-events-extension==0.1.0
-azure-storage-blob==12.20.0
+langchain-mistralai==0.1.7
 langchain-openai==0.1.7
 pydantic==2.7.1
 pydantic-settings==2.2.1
