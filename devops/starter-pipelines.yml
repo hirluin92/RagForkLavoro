@@ -26,7 +26,6 @@ stages:
     commonVariableGroup: AZ00040_funapp-rag-TEST
     linuxPoolName: linuxpoolcontainersvil
     zipArtifacts: true
-    skipTestReport: true #da impostare a false quando il team mette a posto i TEST unitari
     installDependencies: true
     pythonVersion: "3.11"
     enableAdditionalCopy: true
