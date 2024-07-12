@@ -12,8 +12,7 @@ rag_query_performed_event = "RagQueryPerformed"
 rag_orchestrator_requested_event = "RagOrchestratorRequested"
 rag_orchestrator_performed_event = "RagOrchestratorPerformed"
 search_results_received_event = "SearchResultsReceived"
-
 split_data_result = "SplitDataResult"
 split_data_exception = "SplitDataException"
-
+metadata_tagging_exception = "MetadataTaggingException"
 move_files_exception = "MoveFilesException"

@@ -7,7 +7,7 @@ from models.apis.movefiles_response_body import (
     )
 from services.logging import LoggerBuilder
 import constants.event_types as event_types
-from services.storage import get_blob_info_for_move, a_move_blob
+from services.storage import get_blob_info_container_and_blobName, a_move_blob
 from utils.settings import get_storage_settings
 
 
@@ -23,7 +23,7 @@ async def a_move_item(item: ValueFromAzAISearch, context: func.Context) -> Value
         fileUrl =  item.data.fileUrl
         fileSasToken = item.data.fileSasToken
         url_source = fileUrl + fileSasToken
-        blob_from_info = get_blob_info_for_move(url_source)
+        blob_from_info = get_blob_info_container_and_blobName(url_source)
         blob_from_container = blob_from_info[0]
         blob_name = blob_from_info[1]
         try:

@@ -8,7 +8,10 @@ from models.apis.tagging_response_body import (
     ValueToAzAISearch,
 )
 from services.logging import Logger
-from services.storage import a_get_blob_info_for_tagging
+from services.storage import a_get_blobName_and_metadata_for_tagging, a_create_metadata_on_blob
+import uuid
+
+
 
 async def a_get_files_tags(req_body: TaggingRequestBody,
                    logger: Logger) -> TaggingResponseBody:
@@ -23,26 +26,10 @@ async def a_get_tags_from_blob_info(value: ValueFromAzAISearch,
                             logger: Logger) -> ValueToAzAISearch:
     recordId = value.recordId
     url_source = value.data.fileUrl + value.data.fileSasToken
-    folders_to_return= []
-    metadata_to_return= []
-    console_file_id = ""
     try:
-        blob_info = await a_get_blob_info_for_tagging(url_source)
-        name = blob_info[0]
-        metadata = blob_info[1]
-        folder_split= name.split('/')
-        folder_set = set()
-        if len(folder_split) > 1:
-            folder_split.pop()
-            for value in folder_split:
-                folder_set.add(value)
-            folders_to_return = list(folder_set)
-        if metadata:
-            if "id_sql_document" in metadata:
-                console_file_id = metadata["id_sql_document"]
-                del metadata["id_sql_document"]
-            for key, value in metadata.items():
-                metadata_to_return.append(key + ':' + value)
+        folders_to_return = await a_get_folders_name(url_source)
+        console_file_id = await a_get_or_create_console_file_id(url_source)
+        metadata_to_return = await a_get_all_blob_metadata(url_source)
         data_to_return = DataToAzAISearch(folders_to_return,
                                            metadata_to_return,
                                             console_file_id)
@@ -54,3 +41,34 @@ async def a_get_tags_from_blob_info(value: ValueFromAzAISearch,
         return ValueToAzAISearch(recordId, {},
                                   [{ "message": "Error: " + str(error) }],
                                   None)
+
+async def a_get_folders_name(url_source: str) -> list[str]:
+    (blobName, metadata) = await a_get_blobName_and_metadata_for_tagging(url_source)
+    folders_to_return= []
+    folder_split= blobName.split('/')
+    folder_set = set()
+    if len(folder_split) > 1:
+        folder_split.pop()
+        for value in folder_split:
+            folder_set.add(value)
+        folders_to_return = list(folder_set)
+    return folders_to_return
+
+async def a_get_or_create_console_file_id(url_source: str) -> str:
+    (blobName, metadata) = await a_get_blobName_and_metadata_for_tagging(url_source)
+    metadataKey = "id_sql_document"
+    metadataValue = str(uuid.uuid4())
+    if metadataKey in metadata:
+        console_file_id = metadata["id_sql_document"]
+    else:
+        await a_create_metadata_on_blob(url_source, metadataKey, metadataValue)
+        console_file_id = metadataValue
+    return console_file_id
+
+async def a_get_all_blob_metadata(url_source:str) -> list[str]:
+    blob_info = await a_get_blobName_and_metadata_for_tagging(url_source)
+    updatedMetadata = blob_info[1]
+    metadata_to_return= []
+    for key, value in updatedMetadata.items():
+        metadata_to_return.append(key + ':' + value)
+    return metadata_to_return

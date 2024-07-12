@@ -16,7 +16,7 @@ def test_get_blob_info_for_move_ok():
     source = fileUrl + fileSasToken
 
     # Act
-    result = get_blob_info_for_move(source)
+    result = get_blob_info_container_and_blobName(source)
 
     # Assert expected output
     assert len(result) == 2
@@ -58,7 +58,7 @@ async def test_move_item_ok(mocker):
     mock_value.data = mock_value_data
     mock_patch_return_value = ('movefiles-end','asilo/my_documento_assegno_unico.pdf')
     mocker.patch("logics.move_files.get_storage_settings")
-    mocker.patch("logics.move_files.get_blob_info_for_move",
+    mocker.patch("logics.move_files.get_blob_info_container_and_blobName",
                   return_value = mock_patch_return_value)
     mocker.patch("logics.move_files.a_move_blob")
         
