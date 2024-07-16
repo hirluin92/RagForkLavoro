@@ -1,23 +1,16 @@
+from dataclasses import dataclass
 import json
 
+@dataclass
 class BestDocument():
-    def __init__(self,
-                 id: str,
-                 sourceFileID: str,
-                 fileName: str,
-                 tags: str,
-                 path: str,
-                 similarity: float,
-                 chunkText: str,
-                 reference: int):
-        self.id = id
-        self.source_file_id = sourceFileID
-        self.filename = fileName
-        self.tags = tags
-        self.path = path
-        self.similarity = similarity
-        self.chunk_text = chunkText,
-        self.reference = reference
+    id: str
+    source_file_id: str
+    filename: str
+    tags: str
+    path: str
+    similarity: float
+    chunk_text: str
+    reference: int
         
 
 class RagQueryResponse():
