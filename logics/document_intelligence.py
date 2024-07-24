@@ -10,7 +10,7 @@ from services.logging import Logger
 
 
 async def a_get_documents_content(req_body: DocumentIntelligenceRequestBody,
-                        outputFormat: str | None,
+                        outputFormat: str,
                         logger: Logger) -> DocumentIntelligenceResponseBody:
     values = req_body.values
     results = DocumentIntelligenceResponseBody()
@@ -24,7 +24,7 @@ async def a_get_documents_content(req_body: DocumentIntelligenceRequestBody,
     return results
 
 async def a_get_content_from_document_intelligence(value: ValueFromAzAISearch,
-                                           outputFormat: str | None,
+                                           outputFormat: str,
                                            logger: Logger) -> ValueToAzAISearch:
     recordId = value.recordId
     url_source = value.data.fileUrl + value.data.fileSasToken

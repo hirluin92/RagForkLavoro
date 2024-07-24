@@ -19,7 +19,7 @@ def get_document_intelligence_client(endpoint, key) -> DocumentIntelligenceClien
     reraise=True
 )
 async def a_analyze_layout(url_source: str,
-        outputFormat: str | None) -> tuple[str, list, list]:
+        outputFormat: str) -> tuple[str, list, list]:
     settings = get_document_intelligence_settings()
     document_intelligence_client = get_document_intelligence_client(settings.endpoint,
                                                                         settings.key)
