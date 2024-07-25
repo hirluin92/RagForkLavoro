@@ -9,6 +9,7 @@ azure-ai-language-questionanswering==1.1.0
 azure-ai-documentintelligence==1.0.0b3
 azure-storage-blob==12.20.0
 azure-monitor-opentelemetry==1.6.0
+setuptools==71.1.0 #dipendenza di azure-monitor-opentelemetry
 azure-monitor-events-extension==0.1.0
 langchain-mistralai==0.1.10
 langchain-openai==0.1.17
