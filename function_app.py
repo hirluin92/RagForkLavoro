@@ -1,5 +1,6 @@
 import azure.functions as func
 from azure.monitor.opentelemetry import configure_azure_monitor
+import check_status
 import document_intelligence
 import rag_orchestrator
 import metadataTagging
@@ -13,6 +14,7 @@ configure_azure_monitor()
 
 app = func.FunctionApp()
 
+app.register_functions(check_status.bp) 
 app.register_functions(document_intelligence.bp) 
 app.register_functions(move_files.bp)
 app.register_functions(rag_augment_query.bp)
