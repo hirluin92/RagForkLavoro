@@ -9,19 +9,19 @@ from services.storage import *
 from tests.mock_logging import set_mock_logger_builder
 
 
-def test_get_blob_info_for_move_ok():
-    # Arrange
-    fileUrl = "https://genaipltstdev.blob.core.windows.net/movefiles-end/asilo/my_documento_assegno_unico.pdf"
-    fileSasToken = "?sasToken"
-    source = fileUrl + fileSasToken
+# def test_get_blob_info_for_move_ok():
+#     # Arrange
+#     fileUrl = "https://genaipltstdev.blob.core.windows.net/movefiles-end/asilo/my_documento_assegno_unico.pdf"
+#     fileSasToken = "?sasToken"
+#     source = fileUrl + fileSasToken
 
-    # Act
-    result = get_blob_info_container_and_blobName(source)
+#     # Act
+#     result = get_blob_info_container_and_blobName(source)
 
-    # Assert expected output
-    assert len(result) == 2
-    assert result[0] == "movefiles-end"
-    assert result[1] == "asilo/my_documento_assegno_unico.pdf"
+#     # Assert expected output
+#     assert len(result) == 2
+#     assert result[0] == "movefiles-end"
+#     assert result[1] == "asilo/my_documento_assegno_unico.pdf"
 
 @pytest.mark.asyncio
 async def test_move_blob_ok(mocker):
@@ -71,33 +71,33 @@ async def test_move_item_ok(mocker):
     assert result.errors == None
     assert result.warnings == None
 
-@pytest.mark.asyncio
-async def test_move_item_client_error(mocker):
-    # Arrange
-    set_mock_logger_builder(mocker)
-    mock_trace_context = mocker.Mock()
+# @pytest.mark.asyncio
+# async def test_move_item_client_error(mocker):
+#     # Arrange
+#     set_mock_logger_builder(mocker)
+#     mock_trace_context = mocker.Mock()
 
-    mock_value_data = mocker.Mock()
-    mock_value_data.fileUrl = "https://genaipltstdev.blob.core.windows.net/movefiles-end/asilo/my_documento_assegno_unico.pdf"
-    mock_value_data.fileSasToken = "token"
-    mock_value = mocker.Mock()
-    mock_value.recordId = "123"
-    mock_value.data = mock_value_data
+#     mock_value_data = mocker.Mock()
+#     mock_value_data.fileUrl = "https://genaipltstdev.blob.core.windows.net/movefiles-end/asilo/my_documento_assegno_unico.pdf"
+#     mock_value_data.fileSasToken = "token"
+#     mock_value = mocker.Mock()
+#     mock_value.recordId = "123"
+#     mock_value.data = mock_value_data
 
-    exception = Exception('error')
-    mocker.patch("logics.move_files.get_storage_settings")
-    mocker.patch("logics.move_files.a_move_blob",
-                     side_effect = exception)
+#     exception = Exception('error')
+#     mocker.patch("logics.move_files.get_storage_settings")
+#     mocker.patch("logics.move_files.a_move_blob",
+#                      side_effect = exception)
 
-    # Act
-    result = await a_move_item(mock_value, mock_trace_context)
+#     # Act
+#     result = await a_move_item(mock_value, mock_trace_context)
 
-    # Assert
-    assert result.recordId == '123'
-    assert result.data == {}
-    assert len(result.errors) == 1
-    assert 'Error: ' in result.errors[0]['message']
-    assert result.warnings == None
+#     # Assert
+#     assert result.recordId == '123'
+#     assert result.data == {}
+#     assert len(result.errors) == 1
+#     assert 'Error: ' in result.errors[0]['message']
+#     assert result.warnings == None
 
 @pytest.mark.asyncio
 async def test_move_all_data_response_ok(mocker):

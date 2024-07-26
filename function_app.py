@@ -1,3 +1,4 @@
+import logging
 import azure.functions as func
 from azure.monitor.opentelemetry import configure_azure_monitor
 import check_status
@@ -10,6 +11,8 @@ import move_files
 import chunking_empty_rows
 
 configure_azure_monitor()
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+logging.getLogger("azure.monitor.opentelemetry.exporter.export").setLevel(logging.WARNING)
 
 
 app = func.FunctionApp()

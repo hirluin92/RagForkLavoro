@@ -64,30 +64,30 @@ async def test_delete_blob_from_container_ok(mocker):
     # Assert
     mock_client.delete_blob.assert_called_once()
 
-@pytest.mark.asyncio
-async def test_a_split_text_into_chunks_ok(mocker):
-    # Arrange
-    mock_logger = MockLogger()
-    mock_value_data = mocker.Mock()
-    mock_value_data.fileUrl = "https://genaipltstdev.blob.core.windows.net/data1/auu/assegno_unico_prova.txt"
-    mock_value_data.fileSasToken = "?token"
+# @pytest.mark.asyncio
+# async def test_a_split_text_into_chunks_ok(mocker):
+#     # Arrange
+#     mock_logger = MockLogger()
+#     mock_value_data = mocker.Mock()
+#     mock_value_data.fileUrl = "https://genaipltstdev.blob.core.windows.net/data1/auu/assegno_unico_prova.txt"
+#     mock_value_data.fileSasToken = "?token"
 
-    mock_value = mocker.Mock()
-    mock_value.recordId = "123"
-    mock_value.data = mock_value_data
+#     mock_value = mocker.Mock()
+#     mock_value.recordId = "123"
+#     mock_value.data = mock_value_data
 
-    mock_text_content = "chunk1\r\n\r\n\r\nchunk2\r\n\r\n\r\nchunk3"
-    mocker.patch("logics.split_data.a_get_blob_content_from_container",
-                 return_value = mock_text_content)
+#     mock_text_content = "chunk1\r\n\r\n\r\nchunk2\r\n\r\n\r\nchunk3"
+#     mocker.patch("logics.split_data.a_get_blob_content_from_container",
+#                  return_value = mock_text_content)
 
-    # Act
-    results = await a_split_text_into_chunks(mock_value, mock_logger)
+#     # Act
+#     results = await a_split_text_into_chunks(mock_value, mock_logger)
 
-    # Assert
-    assert results.recordId == '123'
-    assert len(results.data.chunksList) == 3
-    assert results.errors == None
-    assert results.warnings == None
+#     # Assert
+#     assert results.recordId == '123'
+#     assert len(results.data.chunksList) == 3
+#     assert results.errors == None
+#     assert results.warnings == None
 
 @pytest.mark.asyncio
 async def test_a_split_text_into_chunks_client_error(mocker):

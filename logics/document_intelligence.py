@@ -7,6 +7,7 @@ from models.apis.document_intelligence_response_body import (
     ValueToAzAISearch)
 from services.document_intelligence import a_analyze_layout
 from services.logging import Logger
+from services.storage import generate_blob_sas_from_blob_client, get_blob_client_from_blob_storage_path
 
 
 async def a_get_documents_content(req_body: DocumentIntelligenceRequestBody,
@@ -27,7 +28,14 @@ async def a_get_content_from_document_intelligence(value: ValueFromAzAISearch,
                                            outputFormat: str,
                                            logger: Logger) -> ValueToAzAISearch:
     recordId = value.recordId
-    url_source = value.data.fileUrl + value.data.fileSasToken
+    blob_storage_path = value.data.fileUrl
+    sas_token = value.data.fileSasToken
+    url_source = blob_storage_path + sas_token
+    if len(value.data.fileSasToken)==0:
+        blob_client = get_blob_client_from_blob_storage_path(blob_storage_path)
+        sas_token = generate_blob_sas_from_blob_client(blob_client)
+        url_source = blob_storage_path + "?" + sas_token
+    
     content_to_return = ""
     paragraphs_to_return = []
     tables_to_return = []

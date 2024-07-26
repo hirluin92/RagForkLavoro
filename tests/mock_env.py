@@ -28,6 +28,8 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("CQA_Deployment" , "myCQA_Deployment")
     monkeypatch.setenv("CQA_DefaultNoResultAnswer" , "Nessuna risposta trovata")
     monkeypatch.setenv("CQA_ConfidenceThreshold" , "0.25")
+    monkeypatch.setenv('STORAGE_ACCOUNT_KEY', 'key')
+    monkeypatch.setenv('STORAGE_ACCOUNT_NAME', 'name')
     monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')
     monkeypatch.setenv('STORAGE_DATA_SOURCE_SPLIT_FILES_CONTAINER', 'container')
     monkeypatch.setenv('STORAGE_CONNECTION_STRING', 'connection_string')

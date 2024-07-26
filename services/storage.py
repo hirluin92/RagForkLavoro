@@ -1,8 +1,39 @@
-from datetime import *
-from functools import cache, lru_cache
+from datetime import datetime, timedelta, timezone
+from functools import cache
+from azure.core.credentials import AzureNamedKeyCredential
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
+from azure.storage.blob import (
+    generate_blob_sas, 
+    BlobSasPermissions,
+    )
 from utils.settings import get_storage_settings
 
+def get_azure_named_key_credential():
+    settings = get_storage_settings()
+    account_name = settings.account_name
+    account_key = settings.account_key
+    credential = AzureNamedKeyCredential(account_name,account_key)
+
+    return credential
+
+def generate_blob_sas_from_blob_client(blob_client: BlobClient):
+    # Create a SAS token that's valid for one day, as an example
+    start_time = datetime.now(timezone.utc)
+    expiry_time = start_time + timedelta(days=1)
+    settings = get_storage_settings()
+    account_key = settings.account_key
+
+    sas_token = generate_blob_sas(
+        account_name=blob_client.account_name,
+        container_name=blob_client.container_name,
+        blob_name=blob_client.blob_name,
+        account_key=account_key,
+        permission=BlobSasPermissions(read=True),
+        expiry=expiry_time,
+        start=start_time
+    )
+
+    return sas_token
 
 @cache
 def get_blob_service_client():
@@ -44,17 +75,24 @@ def get_blob_info_container_and_blobName(url_source: str) -> tuple[str, str]:
     """
     Get the container and the name of a blob
     """
-    blob_client = BlobClient.from_blob_url(url_source)
+    credential = get_azure_named_key_credential()
+    blob_client = BlobClient.from_blob_url(url_source, credential)
     return (blob_client.container_name, blob_client.blob_name)
 
 async def a_get_blobName_and_metadata_for_tagging(url_source: str) -> tuple[str, dict[str, str]]:
     """
     Get the container and the metadata of a blob
     """
-    blob_client = BlobClient.from_blob_url(url_source)
+    credential = get_azure_named_key_credential()
+    blob_client = BlobClient.from_blob_url(url_source, credential)
     blob_properties = await blob_client.get_blob_properties()
     await blob_client.close()
     return (blob_properties.name, blob_properties.metadata)
+
+def get_blob_client_from_blob_storage_path(blob_storage_path: str):
+    credential = get_azure_named_key_credential()
+    blob_client = BlobClient.from_blob_url(blob_storage_path, credential)
+    return blob_client
 
 async def a_create_metadata_on_blob(url_source: str, metadataKey: str, metadataValue: str):
     """
