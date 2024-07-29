@@ -57,7 +57,7 @@ stages:
   parameters:
     commonVariableGroup: AZ00040_funapp-rag-TEST
     winAgentName: AZUBUILDER-P01
-    runtimeStack: 'PYTHON|3.11'
+    runtimeStack: 'PYTHON|3.9'
     deploymentMethod: 'runFromPackage'
     #appSettings: '-SCM_DO_BUILD_DURING_DEPLOYMENT true -ENABLE_ORYX_BUILD true'
     #appSettings: '-WEBSITE_RUN_FROM_PACKAGE 1'
