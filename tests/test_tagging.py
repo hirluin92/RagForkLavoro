@@ -145,6 +145,8 @@ async def test_a_get_tags_from_blob_info_ok(mocker):
     mock_folders = ["naspi"]
     mock_file_id = "guid1"
     mock_metadata = ["sezione:ammortizzatori", "file_id:guid1"]
+    mocker.patch("logics.tagging.a_create_metadata_on_blob",
+                 return_value = None)
     mocker.patch("logics.tagging.a_get_folders_name",
                  return_value = mock_folders)
     mocker.patch("logics.tagging.a_get_or_create_console_file_id",
