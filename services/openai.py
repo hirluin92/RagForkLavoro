@@ -20,7 +20,8 @@ async def a_generate_embedding_from_text(text: str):
     embeddings = AzureOpenAIEmbeddings(azure_endpoint=settings.embedding_endpoint,
                                        azure_deployment=settings.embedding_deployment_model,
                                        api_key=settings.embedding_key,
-                                       api_version=settings.api_version)
+                                       api_version=settings.api_version,
+                                       check_embedding_ctx_length=False)
     return await embeddings.aembed_query(text)
 
 async def a_get_answer_from_context(question: str,
