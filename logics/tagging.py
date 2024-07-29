@@ -11,7 +11,8 @@ from services.logging import Logger
 from services.storage import a_get_blobName_and_metadata_for_tagging, a_create_metadata_on_blob
 import uuid
 
-
+ID_SQL_DOCUMENT= "id_sql_document"
+TAGS_PRESTAZIONE = "tags_prestazione"
 
 async def a_get_files_tags(req_body: TaggingRequestBody,
                    logger: Logger) -> TaggingResponseBody:
@@ -28,6 +29,10 @@ async def a_get_tags_from_blob_info(value: ValueFromAzAISearch,
     url_source = value.data.fileUrl + value.data.fileSasToken
     try:
         folders_to_return = await a_get_folders_name(url_source)
+        tags_prestazione_to_add = ",".join(folders_to_return)
+        await a_create_metadata_on_blob(
+            url_source, TAGS_PRESTAZIONE, tags_prestazione_to_add)
+
         console_file_id = await a_get_or_create_console_file_id(url_source)
         metadata_to_return = await a_get_all_blob_metadata(url_source)
         data_to_return = DataToAzAISearch(folders_to_return,
@@ -56,10 +61,10 @@ async def a_get_folders_name(url_source: str) -> list[str]:
 
 async def a_get_or_create_console_file_id(url_source: str) -> str:
     (blobName, metadata) = await a_get_blobName_and_metadata_for_tagging(url_source)
-    metadataKey = "id_sql_document"
+    metadataKey = ID_SQL_DOCUMENT
     metadataValue = str(uuid.uuid4())
     if metadataKey in metadata:
-        console_file_id = metadata["id_sql_document"]
+        console_file_id = metadata[ID_SQL_DOCUMENT]
     else:
         await a_create_metadata_on_blob(url_source, metadataKey, metadataValue)
         console_file_id = metadataValue
