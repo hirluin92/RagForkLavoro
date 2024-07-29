@@ -52,14 +52,12 @@ async def a_get_answer_from_context(question: str,
     )
 
     data_to_log = {
-        {
             "endpoint": settings.completion_endpoint,
             "deployment": settings.completion_deployment_model,
             "api_version": settings.api_version,
             "temperature": settings.completion_temperature, 
             "max_tokens": settings.completion_tokens
         }
-    }
 
     logger.track_event(event_types.llm_answer_generation_openai_request,
                            data_to_log)
