@@ -26,7 +26,9 @@ async def a_get_files_tags(req_body: TaggingRequestBody,
 async def a_get_tags_from_blob_info(value: ValueFromAzAISearch,
                             logger: Logger) -> ValueToAzAISearch:
     recordId = value.recordId
-    url_source = value.data.fileUrl + value.data.fileSasToken
+    blob_storage_path = value.data.fileUrl
+    #sas_token = value.data.fileSasToken
+    url_source = blob_storage_path #+ sas_token
     try:
         folders_to_return = await a_get_folders_name(url_source)
         tags_prestazione_to_add = ",".join(folders_to_return)

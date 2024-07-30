@@ -31,7 +31,7 @@ async def a_get_content_from_document_intelligence(value: ValueFromAzAISearch,
     blob_storage_path = value.data.fileUrl
     sas_token = value.data.fileSasToken
     url_source = blob_storage_path + sas_token
-    if len(value.data.fileSasToken)==0:
+    if len(sas_token)==0:
         blob_client = get_blob_client_from_blob_storage_path(blob_storage_path)
         sas_token = generate_blob_sas_from_blob_client(blob_client)
         url_source = blob_storage_path + "?" + sas_token
