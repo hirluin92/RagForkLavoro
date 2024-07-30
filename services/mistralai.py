@@ -61,7 +61,7 @@ async def a_get_answer_from_context(question: str,
                        prompt_and_model_result.response_metadata.get("finish_reason", "ND"))
 
 async def a_get_enriched_query(query: str,
-                       tags: list[str],
+                       topic: str,
                        chat_history: str,
                        logger: Logger) -> EnrichmentQueryResponse:
     """
@@ -78,16 +78,6 @@ async def a_get_enriched_query(query: str,
                                                         prompt_const.ENRICHMENT_SYSTEM)
     user_message_template = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
                                                         prompt_const.ENRICHMENT_USER)
-    tags_map = json.loads(await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        prompt_const.TAGS_MAPPING))
-    
-    if not enrichment_prompt_template or not user_message_template or not tags: 
-        raise Exception("Cannot read templates")
-
-    # Recupero il topic
-    if tags and len(tags) > 0:
-        topic  = tags_map.get(tags[0])
-
     # Costruzione chain
     prompt = ChatPromptTemplate.from_messages([
         ("system", enrichment_prompt_template),

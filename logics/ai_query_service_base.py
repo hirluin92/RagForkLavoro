@@ -6,6 +6,7 @@ from aiohttp import ClientSession
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.apis.rag_orchestrator_request import Interaction, RagOrchestratorRequest
 from models.apis.rag_query_response_body import RagQueryResponse
+from services.mssql import get_tags_by_tag_names
 
 class AiQueryServiceBase(ABC):
      
@@ -22,7 +23,14 @@ class AiQueryServiceBase(ABC):
     @abstractmethod
     async def a_do_query_enrichment(self, request: RagOrchestratorRequest,
                             logger: Logger)-> EnrichmentQueryResponse:
-        pass   
+        pass 
+
+    def get_topic_from_tags(self, tags: list[str])->str:
+        topic = ""
+        tags_from_repo = get_tags_by_tag_names(tags)
+        if len(tags_from_repo)>0:
+            topic = ",".join([str(x.description) for x in tags_from_repo])
+        return topic  
 
     def extract_chat_history(self, interactions: list[Interaction]) -> str:
 

@@ -20,6 +20,7 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("AZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION" , "myAZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION")
     monkeypatch.setenv("AZURE_SEARCH_K" , "0")
     monkeypatch.setenv("AZURE_SEARCH_KEY" , "myAZURE_SEARCH_KEY")
+    monkeypatch.setenv("AZURE_SQL_CONNECTION_STRING" , "myConnectionString")
     monkeypatch.setenv("ENRICHMENT_ENDPOINT" , "myENRICHMENT_ENDPOINT")
     monkeypatch.setenv("QUERY_ENDPOINT" , "myQUERY_ENDPOINT")
     monkeypatch.setenv("CQA_Endpoint" , "myCQA_Endpoint")
