@@ -55,3 +55,6 @@ __azurite_db*__.json
 
 #PyCharm
 .idea/
+
+#coverage
+htmlcov/
