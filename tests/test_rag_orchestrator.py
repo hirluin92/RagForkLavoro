@@ -60,7 +60,7 @@ async def test_query_missing_environment_variables(mocker):
 
     req_body = {
         "question": "question",
-        "tags": []
+        "tags": ["auu"]
     }
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
@@ -83,7 +83,7 @@ async def test_query_missing_body_value_question(mocker,
     set_mock_logger_builder(mocker)
 
     req_body = {
-        "tags": []
+        "tags": ["auu"]
     }
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
