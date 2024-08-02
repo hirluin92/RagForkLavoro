@@ -167,7 +167,7 @@ async def test_rag_orchestrator_cqa_success(mocker, monkeypatch):
     mock_cqa_do_query_result = CQAResponse(text_answer="L'assegno unico è...", cqa_data={ "fake" : "fake"})
     mocker.patch('logics.rag_orchestrator.cqa_do_query', return_value=mock_cqa_do_query_result)
     
-    request = RagOrchestratorRequest(query="Cosa è l'assegno unico?", llm_model_id="OPENAI")
+    request = RagOrchestratorRequest(query="Cosa è l'assegno unico?", llm_model_id="OPENAI", tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
@@ -189,7 +189,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker,monkeypatch):
                                                                                        end_conversation=False)
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
-    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ])
+    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
@@ -212,7 +212,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     mock_language_service.a_do_query.return_value = RagQueryResponse("L'assegno unico è un ....",[], "stop", None, None, None, None, None)
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
-    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ])
+    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger,mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
