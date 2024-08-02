@@ -14,7 +14,7 @@ def get_question_answering_client(key_credential: str,
     client = QuestionAnsweringClient(endpoint, credential)
     return client
 
-async def a_do_query(query: str, logger: Logger)-> CQAResponse:
+async def a_do_query(query: str, topic:str, logger: Logger)-> CQAResponse:
     """
     Questa funzione esegue una query di domanda e risposta utilizzando il servizio di Azure QnA Maker.
     Prende in input una domanda e restituisce la risposta ottenuta dal servizio.
@@ -25,9 +25,14 @@ async def a_do_query(query: str, logger: Logger)-> CQAResponse:
         client = get_question_answering_client(settings.key_credential,
                                                settings.endpoint)
         #with client:
+        
+        project_name = settings.knowledgebase_project 
+        if topic in settings.auu_tags.split(sep="|"):
+            project_name = settings.auu_project_name
+        
         output = await client.get_answers(
             question=query,
-            project_name=settings.knowledgebase_project,
+            project_name=project_name,
             deployment_name=settings.deployment
         )
 

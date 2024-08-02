@@ -10,3 +10,5 @@ class CQASettings(BaseSettings):
     deployment: str = Field(alias='CQA_Deployment')
     default_noresult_answer: str = Field(alias='CQA_DefaultNoResultAnswer')
     confidence_threshold: float = Field(alias='CQA_ConfidenceThreshold')
+    auu_tags: str = Field(alias='CQA_AUU_TAGS')
+    auu_project_name: str = Field(alias='CQA_AUU_PROJECT_NAME')
