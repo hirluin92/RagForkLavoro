@@ -111,7 +111,7 @@ async def test_cqa_answer_hi_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result.text_answer 
     assert result.text_answer != str(os.getenv("default_noresult_answer"))
@@ -133,7 +133,7 @@ async def test_cqa_answer_low_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result == None
     logger.track_event.assert_called_once()
@@ -153,7 +153,7 @@ async def test_cqa_answer_out_of_context(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value = cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result == None
     logger.track_event.assert_called_once()
