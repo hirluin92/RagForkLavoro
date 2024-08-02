@@ -37,3 +37,5 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
     monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
     monkeypatch.setenv('PROMPT_ANSWER_GENERATION_MARKDOWN_ENABLED', 'False')
+    monkeypatch.setenv('CQA_AUU_TAGS', 'auu_test_dctii|AUUSylvie')
+    monkeypatch.setenv('CQA_AUU_PROJECT_NAME', 'auu-faq')
