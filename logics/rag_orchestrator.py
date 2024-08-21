@@ -11,7 +11,7 @@ from services.cqa import a_do_query as cqa_do_query
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
             session: ClientSession) -> RagOrchestratorResponse:
-    cqa_result = await cqa_do_query(request.query, request.tags[0], logger)
+    cqa_result = await cqa_do_query(request.query, logger)
 
     # Se CQA è in grado di gestire la richiesta restituisco subito la risposta
     if cqa_result:
@@ -31,7 +31,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
 
     if enriched_query.standalone_question != request.query:
         request.query = enriched_query.standalone_question
-        cqa_result = await cqa_do_query(request.query, request.tags[0], logger)
+        cqa_result = await cqa_do_query(request.query, logger)
         # Se CQA è in grado di gestire la richiesta restituisco subito la risposta
         if cqa_result:
             logger.track_event(event_types.cqa_with_enrichment_event, 
