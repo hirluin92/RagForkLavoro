@@ -2,6 +2,7 @@ from functools import lru_cache
 from models.configurations.cqa import CQASettings
 from models.configurations.document_intelligence import DocumentIntelligenceSettings
 from models.configurations.mistralai import MistralAISettings
+from models.configurations.mssql import MsSqlSettings
 from models.configurations.openai import OpenAISettings
 from models.configurations.prompt import PromptSettings
 from models.configurations.search import SearchSettings
@@ -18,6 +19,10 @@ def get_document_intelligence_settings():
 @lru_cache
 def get_mistralai_settings():
     return MistralAISettings()
+
+@lru_cache
+def get_mssql_settings():
+    return MsSqlSettings()
 
 @lru_cache
 def get_openai_settings():

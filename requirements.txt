@@ -16,5 +16,6 @@ langchain-mistralai==0.1.10
 langchain-openai==0.1.17
 pydantic==2.8.2
 pydantic-settings==2.3.4
+pyodbc==5.1.0
 tenacity==8.5.0
 mammoth==1.8.0

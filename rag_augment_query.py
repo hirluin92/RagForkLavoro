@@ -8,6 +8,7 @@ import azure.functions as func
 from utils.http_problem import Problem
 from utils.settings import (
     get_mistralai_settings,
+    get_mssql_settings,
     get_openai_settings,
     get_storage_settings
     ) 
@@ -20,6 +21,7 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
 
     try:
         get_mistralai_settings()
+        get_mssql_settings()
         get_openai_settings()
         get_storage_settings()
     except ValidationError as e:
