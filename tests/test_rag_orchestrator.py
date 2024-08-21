@@ -60,7 +60,7 @@ async def test_query_missing_environment_variables(mocker):
 
     req_body = {
         "question": "question",
-        "tags": []
+        "tags": ["auu"]
     }
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
@@ -83,7 +83,7 @@ async def test_query_missing_body_value_question(mocker,
     set_mock_logger_builder(mocker)
 
     req_body = {
-        "tags": []
+        "tags": ["auu"]
     }
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
@@ -111,7 +111,7 @@ async def test_cqa_answer_hi_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result.text_answer 
     assert result.text_answer != str(os.getenv("default_noresult_answer"))
@@ -133,7 +133,7 @@ async def test_cqa_answer_low_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result == None
     logger.track_event.assert_called_once()
@@ -153,7 +153,7 @@ async def test_cqa_answer_out_of_context(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value = cqa_mock_client)
 
-    result = await a_do_query(query, logger)
+    result = await a_do_query(query, "", logger)
 
     assert result == None
     logger.track_event.assert_called_once()
@@ -167,7 +167,7 @@ async def test_rag_orchestrator_cqa_success(mocker, monkeypatch):
     mock_cqa_do_query_result = CQAResponse(text_answer="L'assegno unico è...", cqa_data={ "fake" : "fake"})
     mocker.patch('logics.rag_orchestrator.cqa_do_query', return_value=mock_cqa_do_query_result)
     
-    request = RagOrchestratorRequest(query="Cosa è l'assegno unico?", llm_model_id="OPENAI")
+    request = RagOrchestratorRequest(query="Cosa è l'assegno unico?", llm_model_id="OPENAI", tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
@@ -189,7 +189,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker,monkeypatch):
                                                                                        end_conversation=False)
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
-    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ])
+    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
@@ -212,7 +212,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     mock_language_service.a_do_query.return_value = RagQueryResponse("L'assegno unico è un ....",[], "stop", None, None, None, None, None)
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
-    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ])
+    request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"])
     result = await logics.rag_orchestrator.a_get_query_response(request, logger,mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
