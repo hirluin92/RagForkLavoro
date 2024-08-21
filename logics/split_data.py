@@ -34,7 +34,11 @@ async def a_split_text_into_chunks(value: ValueFromAzAISearch,
         container = blob_info[0]
         blob_filename = blob_info[1]
         blob_text = await a_get_blob_content_from_container(container, blob_filename)
-        splittedText = blob_text.split(sep="\r\n\r\n\r\n")
+        splittedText = blob_text.split(sep="\r\n\r\n\r\n\r\n")
+        if len(splittedText) == 1:
+            splittedText = blob_text.split(sep="\n\n\n\n")
+        if len(splittedText) == 1:
+            splittedText = blob_text.split(sep="\r\r\r\r")
         stripped_chunks = [item.strip() for item in splittedText]
         propertiesDict = {"fileUrl": value.data.fileUrl,
                           "NumberOfChunks": len(stripped_chunks)}
