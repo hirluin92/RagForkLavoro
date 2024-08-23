@@ -2,7 +2,6 @@ import json
 from aiohttp import ClientSession
 from tenacity import retry, stop_after_attempt, wait_exponential
 from models.configurations.search import SearchSettings
-from models.services.search_documents_response import SearchDocumentsResponse
 from models.services.search_index_response import SearchIndexResponse
 import constants.event_types as event_types
 
