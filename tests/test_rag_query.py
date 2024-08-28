@@ -73,7 +73,7 @@ def test_build_question_context_from_search_empty_context(mocker):
     mock_search_result.value = []
 
     # Act
-    result = build_question_context_from_search(mock_search_result, 0)
+    result = build_question_context_from_search(mock_search_result)
 
     # Assert
     assert len(result) == 0
@@ -92,14 +92,13 @@ def test_build_question_context_from_search_ok(mocker):
     mock_search_result.value = [mock_search_result_value]
 
     # Act
-    result = build_question_context_from_search(mock_search_result, 0)
+    result = build_question_context_from_search(mock_search_result)
 
     # Assert
     assert len(result) == 1
     assert result[0].chunk_id == "chunk_id"
     assert result[0].chunk == "chunk_text"
     assert result[0].filename == "filename"
-    assert result[0].caption == "caption"
     assert result[0].score == 2
     assert result[0].reference == 1
     assert result[0].tags == "auu"
@@ -161,7 +160,6 @@ async def test_get_from_index_ok(mocker,
     # Assert
     assert result.data_context == "context"
     assert result.data_count == 1
-    assert len(result.search_answers) == 1
     assert len(result.value) == 1
 
 @pytest.mark.asyncio

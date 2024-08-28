@@ -69,13 +69,12 @@ async def a_execute_query(llm_model_id: str,
                             references_to_return,
                             finish_reason,
                             links_to_return,
-                            len(context_ids_to_return) > 0,
+                            len(references_to_return) > 0,
                             context_ids_to_return,
                             context_to_return,
                             best_documents_to_return)
 
-def build_question_context_from_search(search_result: SearchIndexResponse,
-                                       reranker_threshold: int = 0) -> list[RagContextContent]:
+def build_question_context_from_search(search_result: SearchIndexResponse) -> list[RagContextContent]:
     """
     Builds the context for the question from the search result.
     The results are ordered by the reranker score in descending order.
@@ -83,13 +82,14 @@ def build_question_context_from_search(search_result: SearchIndexResponse,
     content: list[RagContextContent] = []
     index = 1
     for value in search_result.value:
-        if value.search_rerankerScore > reranker_threshold:
+            score = value.search_rerankerScore
+            if score < 0:
+                score = value.search_score
             content.append(RagContextContent(value.chunk_id,
                                              value.chunk_text,
                                              index,
                                              value.filename,
-                                             value.search_captions[0].text,
-                                             value.search_rerankerScore,
+                                             score,
                                              ", ".join(value.tags)))
             index += 1
 

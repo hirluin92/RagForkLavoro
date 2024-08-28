@@ -4,6 +4,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from models.configurations.search import SearchSettings
 from models.services.search_index_response import SearchIndexResponse
 import constants.event_types as event_types
+import constants.search as search_constants
 
 from services.logging import Logger
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
@@ -27,23 +28,32 @@ async def a_query(session: ClientSession,
     k = settings.k
     top = settings.top
     payload = {
-        "search": question,
         "select": "chunk_id, chunk_text, filename, tags",
-        "queryType": "semantic",
-        "vectorQueries": [
-            {"vector": embedding,
-             "fields": "chunk_text_vector",
-                "kind": "vector",
-                  "k": k,
-             }],
-        "semanticConfiguration": settings.index_semantic_configuration,
-        "captions": "extractive",
         "top": top
     }
+
     if len(tags) > 0:
         tagsToSearch = ",".join(tags)
         filter = "tags/any(t: search.in(t, '{tagsToSearch}'))"
         payload["filter"] = filter.format(tagsToSearch=tagsToSearch)
+
+    if (settings.search_method == search_constants.SEARCH_METHOD_HYBRID
+        or settings.search_method == search_constants.SEARCH_METHOD_FULL_TEXT):
+        payload["search"] = question
+
+    if (settings.search_method == search_constants.SEARCH_METHOD_HYBRID
+        or settings.search_method == search_constants.SEARCH_METHOD_VECTOR):
+        payload["vectorQueries"] = [
+            {"vector": embedding,
+             "fields": "chunk_text_vector",
+                "kind": "vector",
+                  "k": k,
+             }]
+        
+    if settings.semantic_ranking_enabled:
+        payload["queryType"] = "semantic"
+        payload["semanticConfiguration"] = settings.index_semantic_configuration
+        payload["captions"] = "extractive"
 
     data = json.dumps(payload)
     endpoint: str = settings.endpoint + "/indexes/" + index + "/docs/search"

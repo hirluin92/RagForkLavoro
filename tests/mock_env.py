@@ -19,6 +19,8 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("AZURE_SEARCH_INDEX" , "myAZURE_SEARCH_INDEX")
     monkeypatch.setenv("AZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION" , "myAZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION")
     monkeypatch.setenv("AZURE_SEARCH_K" , "0")
+    monkeypatch.setenv("AZURE_SEARCH_SEARCH_METHOD" , "HYBRID")
+    monkeypatch.setenv("AZURE_SEARCH_SEMANTIC_RANKING_ENABLED" , "True")
     monkeypatch.setenv("AZURE_SEARCH_TOP" , "0")
     monkeypatch.setenv("AZURE_SEARCH_KEY" , "myAZURE_SEARCH_KEY")
     monkeypatch.setenv("AZURE_SQL_CONNECTION_STRING" , "myConnectionString")

@@ -8,7 +8,6 @@ class RagContextContent:
     chunk: str
     reference: int
     filename: str
-    caption: str
     score: float
     tags: str
 
