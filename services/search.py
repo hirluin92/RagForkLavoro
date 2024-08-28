@@ -25,23 +25,20 @@ async def a_query(session: ClientSession,
     params = {'api-version': settings.api_version}
     index = settings.index
     k = settings.k
+    top = settings.top
     payload = {
         "search": question,
         "select": "chunk_id, chunk_text, filename, tags",
         "queryType": "semantic",
-        # "vectorQueries": [{"text": question, "fields": "chunk_text_vector", "kind": "text", "k": k}], # api-preview
         "vectorQueries": [
             {"vector": embedding,
              "fields": "chunk_text_vector",
                 "kind": "vector",
                   "k": k,
-             # "exhaustive": True,
-             }],  # Vector query
+             }],
         "semanticConfiguration": settings.index_semantic_configuration,
         "captions": "extractive",
-        # "answers": "extractive",
-        # "count":"true",
-        "top": k
+        "top": top
     }
     if len(tags) > 0:
         tagsToSearch = ",".join(tags)

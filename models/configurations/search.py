@@ -10,3 +10,4 @@ class SearchSettings(BaseSettings):
     index_semantic_configuration: str
     k: int
     key: str
+    top: int
