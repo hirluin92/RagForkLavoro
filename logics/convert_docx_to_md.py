@@ -11,7 +11,7 @@ from models.apis.convert_docx_to_md_request_body import ConvertDocxToMdRequestBo
 from models.apis.convert_docx_to_md_response_body import ConvertDocxToMdResponseBody, DataToAzAISearch
 from services.storage import generate_blob_sas_from_blob_client, get_blob_client_from_blob_storage_path
 import mammoth
-
+from bs4 import BeautifulSoup
 
 async def a_convert_docx_to_md(req_body: ConvertDocxToMdRequestBody,
                                context: func.Context) -> ConvertDocxToMdResponseBody:
@@ -37,10 +37,9 @@ async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> Va
         blob_name = blob_from_info[1]
         try:
             with await a_get_blob_stream_from_container(blob_from_container, blob_name) as stream:
-                result = mammoth.convert_to_markdown(stream)
-                md_file = result.value
+                finalText = extract_text_and_hyperlink(stream)
                 return ValueToAzAISearch(item.recordId,
-                                         DataToAzAISearch(md_file),
+                                         DataToAzAISearch(finalText),
                                          None,
                                          None)
         except Exception as err:
@@ -51,3 +50,22 @@ async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> Va
             error_to_return = ValueToAzAISearch(
                 item.recordId, {}, data_error, None)
             return error_to_return
+
+
+def extract_text_and_hyperlink(stream: bytes) -> str:
+    result = mammoth.convert_to_html(stream)
+    htmlText = result.value
+    soup = BeautifulSoup(htmlText, 'html.parser')
+    hyperLinks = soup.find_all('a', href=True)
+    for link in hyperLinks:
+        text = link.text
+        if not text:
+            md_link = ""
+        else:
+            md_link = f"[{text}]({link['href']})"
+        link.replace_with(md_link)       
+    text = ""
+    all_tags = soup.find_all()
+    for tag in all_tags:
+        text = text + " " + tag.get_text()
+    return text

@@ -44,7 +44,7 @@ async def test_a_convert_docx_to_md_ok(mocker, monkeypatch):
     data_from_mammoth = mocker.Mock()
     data_from_mammoth.value = "some initial text data"
 
-    mocker.patch("mammoth.convert_to_markdown",
+    mocker.patch("logics.convert_docx_to_md.extract_text_and_hyperlink",
                  return_value=data_from_mammoth)
 
     # Act
@@ -86,7 +86,7 @@ async def test_a_convert_docx_to_md_error(mocker, monkeypatch):
     data_from_mammoth.value = "some initial text data"
 
     exception = Exception('error')
-    mocker.patch("mammoth.convert_to_markdown",
+    mocker.patch("logics.convert_docx_to_md.extract_text_and_hyperlink",
                  side_effect=exception)
 
     # Act
