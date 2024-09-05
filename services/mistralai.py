@@ -88,7 +88,8 @@ async def a_get_enriched_query(query: str,
                     api_key=mistralai_settings.key,
                     model_name=mistralai_settings.model,
                     temperature=mistralai_settings.temperature,
-                    max_tokens=mistralai_settings.tokens)
+                    max_tokens=mistralai_settings.tokens,
+                    timeout=30)
 
     chain = prompt | llm.with_retry() 
 

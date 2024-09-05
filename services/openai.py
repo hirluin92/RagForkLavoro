@@ -45,7 +45,8 @@ async def a_get_answer_from_context(question: str,
                           api_version = settings.api_version,
                           api_key = settings.completion_key,
                           temperature = settings.completion_temperature, 
-                          max_tokens = settings.completion_tokens)
+                          max_tokens = settings.completion_tokens,
+                          timeout=30)
 
     chain = (
         doc_search_prompt  # Passes the input variables above to the prompt template
