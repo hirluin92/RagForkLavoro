@@ -34,6 +34,7 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("CQA_KnowledgeBaseProject" , "myCQA_KnowledgeBaseProject")
     monkeypatch.setenv("CQA_KnowledgeBaseProjectDCO" , "auu-faq")
     monkeypatch.setenv("CQA_TagsDCO" , "auu")
+    monkeypatch.setenv("ENRICHMENT_BY_TOPIC_ENABLED" , "True")
     monkeypatch.setenv('STORAGE_ACCOUNT_KEY', 'key')
     monkeypatch.setenv('STORAGE_ACCOUNT_NAME', 'name')
     monkeypatch.setenv('STORAGE_BULK_SPLIT_FILES_CONTAINER', 'container')

@@ -12,6 +12,7 @@ from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 import constants.llm as llm_const
 from utils.settings import (
+    get_app_settings,
     get_mistralai_settings,
     get_openai_settings,
     get_search_settings,
@@ -379,6 +380,7 @@ async def test_query_no_body(mocker, monkeypatch):
 @pytest.mark.asyncio
 async def test_query_missing_environment_variables(mocker):
     # Arrange
+    get_app_settings.cache_clear()
     get_mistralai_settings.cache_clear()
     get_openai_settings.cache_clear()
     get_search_settings.cache_clear()

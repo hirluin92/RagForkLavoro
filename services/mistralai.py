@@ -1,4 +1,3 @@
-import json
 from logging import Logger
 from typing import List
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,7 +9,7 @@ from models.services.openai_rag_response import RagResponse, RagResponseOutputPa
 import constants.event_types as event_types
 from services.storage import a_get_blob_content_from_container
 import constants.prompt as prompt_const
-from utils.settings import get_mistralai_settings, get_storage_settings
+from utils.settings import get_app_settings, get_mistralai_settings, get_storage_settings
 
 async def a_get_answer_from_context(question: str,
                             context: List[RagContextContent],
@@ -70,6 +69,7 @@ async def a_get_enriched_query(query: str,
         indica un fallimento nell'operazione
     """
     # Lettura parametri di configurazione
+    app_settings = get_app_settings()
     storage_settings = get_storage_settings()
     mistralai_settings = get_mistralai_settings()
 
@@ -102,9 +102,13 @@ async def a_get_enriched_query(query: str,
     }
     
     logger.track_event(event_types.llm_enrichment_request_event, data_to_log)
+
+    topic_to_chain = ""
+    if app_settings.enrichment_by_topic_enabled:
+        topic_to_chain = topic
     
     prompt_and_model_result = await chain.ainvoke({
-        "topic": topic,
+        "topic": topic_to_chain,
         "chat_history": chat_history,
         "question": query
     })

@@ -10,6 +10,7 @@ from models.apis.rag_query_request_body import RagQueryRequestBody
 from utils.http_problem import Problem 
 from services.logging import LoggerBuilder
 from utils.settings import (
+    get_app_settings,
     get_mistralai_settings,
     get_openai_settings,
     get_prompt_settings,
@@ -25,6 +26,7 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
         logger.info('Query request')
         
         try:
+            get_app_settings()
             get_mistralai_settings()
             get_openai_settings()
             get_prompt_settings()

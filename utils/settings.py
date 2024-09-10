@@ -1,4 +1,5 @@
 from functools import lru_cache
+from models.configurations.app import AppSettings
 from models.configurations.cqa import CQASettings
 from models.configurations.document_intelligence import DocumentIntelligenceSettings
 from models.configurations.mistralai import MistralAISettings
@@ -7,6 +8,10 @@ from models.configurations.openai import OpenAISettings
 from models.configurations.prompt import PromptSettings
 from models.configurations.search import SearchSettings
 from models.configurations.storage import BlobStorageSettings
+
+@lru_cache
+def get_app_settings():
+    return AppSettings()
 
 @lru_cache
 def get_cqa_settings():
