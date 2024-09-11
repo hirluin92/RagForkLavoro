@@ -2,7 +2,7 @@ from logging import Logger
 
 from aiohttp import ClientSession
 from constants import event_types
-from constants import llm
+from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
@@ -24,7 +24,10 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     enriched_query = await language_service.a_do_query_enrichment(request, logger)
 
     if enriched_query.end_conversation:
-        return RagOrchestratorResponse(llm.default_answer,
+        answer_to_return = llm_const.default_answer
+        if len(enriched_query.end_conversation_reason)>0:
+            answer_to_return = enriched_query.end_conversation_reason
+        return RagOrchestratorResponse(answer_to_return,
                                    enriched_query.standalone_question,
                                    None,
                                    None)

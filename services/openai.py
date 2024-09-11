@@ -7,6 +7,7 @@ from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.services.openai_rag_context_content import RagContextContent
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
 import constants.event_types as event_types
+import constants.llm as llm_const
 import constants.prompt as prompt_const
 from services.storage import a_get_blob_content_from_container
 from utils.settings import get_app_settings, get_openai_settings, get_storage_settings
@@ -129,16 +130,27 @@ async def a_get_enriched_query(query: str,
     if app_settings.enrichment_by_topic_enabled:
         topic_to_chain = topic
 
-    prompt_and_model_result =  await chain.ainvoke({
+    result_content = None
+
+    try:
+        prompt_and_model_result =  await chain.ainvoke({
         "topic": topic_to_chain,
         "chat_history": chat_history,
         "question": query
-    })
-    
-    logger.track_event(event_types.llm_enrichment_response_event,
-                           {"enrichedQuery": prompt_and_model_result.json()})
+        })
+        
+        logger.track_event(event_types.llm_enrichment_response_event,
+                            {"enrichedQuery": prompt_and_model_result.json()})
 
-    result_content_parser = PydanticOutputParser(pydantic_object=EnrichmentQueryResponse)
-    result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+        result_content_parser = PydanticOutputParser(pydantic_object=EnrichmentQueryResponse)
+        result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+    except Exception as e:
+        if e.status_code == 400:
+            logger.exception(e.message)
+            result_content = EnrichmentQueryResponse(standalone_question="",
+                                                     end_conversation=True,
+                                                     end_conversation_reason=llm_const.default_content_filter_answer)
+        else:
+            raise e
 
     return result_content
