@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_mistralai import ChatMistralAI
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
-from models.services.openai_rag_context_content import RagContextContent
+from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
 import constants.event_types as event_types
 from services.storage import a_get_blob_content_from_container
@@ -12,7 +12,7 @@ import constants.prompt as prompt_const
 from utils.settings import get_app_settings, get_mistralai_settings, get_storage_settings
 
 async def a_get_answer_from_context(question: str,
-                            context: List[RagContextContent],
+                            context: List[LlmContextContent],
                             system_prompt: str,
                             system_links_prompt: str,
                             user_prompt:str,

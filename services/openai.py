@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from typing import List
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
-from models.services.openai_rag_context_content import RagContextContent
+from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
 import constants.event_types as event_types
 import constants.llm as llm_const
@@ -25,7 +25,7 @@ async def a_generate_embedding_from_text(text: str):
     return await embeddings.aembed_query(text)
 
 async def a_get_answer_from_context(question: str,
-                            context: List[RagContextContent],
+                            context: List[LlmContextContent],
                             system_prompt: str,
                             system_links_prompt: str,
                             user_prompt:str,

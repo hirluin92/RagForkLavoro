@@ -4,6 +4,7 @@ from typing import List
 from aiohttp import ClientSession
 from constants import event_types
 from models.apis.rag_query_response_body import BestDocument, RagQueryResponse
+from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_context_content import RagContextContent
 from models.services.openai_rag_response import RagResponse
 from models.services.search_index_response import SearchIndexResponse
@@ -113,6 +114,7 @@ async def a_get_response_from_llm(llm_model_id: str,
     system_links_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
                                                         system_links_prompt_name)
 
+    context_to_send: list[LlmContextContent] = []
     data_to_log = {
         "systemPrompt": system_prompt,
         "systemLinksPrompt": system_links_prompt,
@@ -120,20 +122,22 @@ async def a_get_response_from_llm(llm_model_id: str,
         "question": question,
     }
     for index, document in enumerate(context):
-        data_to_log["context_" + str(index).zfill(2)] = json.dumps(document.toJSON())
+        context_to_send_to_append = LlmContextContent(document.chunk, document.reference, document.score) 
+        context_to_send.append(context_to_send_to_append)
+        data_to_log["context_" + str(index).zfill(2)] = json.dumps(context_to_send_to_append.toJSON())
 
     logger.track_event(event_types.llm_answer_generation_request_event, data_to_log)
 
     if llm_model_id == llm_const.mistralai:
         return await mistralai_get_answer_from_context(question,
-                                                 context,
+                                                 context_to_send,
                                                  system_prompt,
                                                  system_links_prompt,
                                                  user_prompt,
                                                  logger)
     else:
         return await openai_get_answer_from_context(question,
-                                              context,
+                                              context_to_send,
                                               system_prompt,
                                               system_links_prompt,
                                               user_prompt, 
