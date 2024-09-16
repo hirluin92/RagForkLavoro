@@ -9,7 +9,7 @@ import constants.event_types as event_types
 from services.storage import get_blob_info_container_and_blobName, a_get_blob_stream_from_container
 from models.apis.convert_docx_to_md_request_body import ConvertDocxToMdRequestBody
 from models.apis.convert_docx_to_md_response_body import ConvertDocxToMdResponseBody, DataToAzAISearch
-from services.storage import generate_blob_sas_from_blob_client, get_blob_client_from_blob_storage_path
+from services.storage import generate_blob_sas_from_blob_client, get_blob_client_from_blob_storage_path, a_get_blob_content_from_container
 import mammoth
 from bs4 import BeautifulSoup
 
@@ -36,9 +36,12 @@ async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> Va
         blob_from_container = blob_from_info[0]
         blob_name = blob_from_info[1]
         try:
-            with await a_get_blob_stream_from_container(blob_from_container, blob_name) as stream:
-                finalText = extract_text_and_hyperlink(stream)
-                return ValueToAzAISearch(item.recordId,
+            if blob_name.endswith('.docx'):
+                with await a_get_blob_stream_from_container(blob_from_container, blob_name) as stream:
+                    finalText = extract_text_and_hyperlink(stream)
+            else:
+                finalText = await a_get_blob_content_from_container(blob_from_container, blob_name)
+            return ValueToAzAISearch(item.recordId,
                                          DataToAzAISearch(finalText),
                                          None,
                                          None)
