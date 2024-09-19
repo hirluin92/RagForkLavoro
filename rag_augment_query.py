@@ -14,7 +14,7 @@ from utils.settings import (
     ) 
 bp = func.Blueprint() 
 
-@bp.route(route="augmentQuery", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
+@bp.route(route="augmentQuery", auth_level=func.AuthLevel.FUNCTION, methods=['POST'])
 async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Augment query request')

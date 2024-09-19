@@ -10,7 +10,7 @@ from utils.settings import get_storage_settings
 bp = func.Blueprint()
 
 
-@bp.route(route="moveFiles", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
+@bp.route(route="moveFiles", auth_level=func.AuthLevel.FUNCTION, methods=['POST'])
 async def move_files(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Move files request.')

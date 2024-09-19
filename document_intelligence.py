@@ -10,7 +10,7 @@ from utils.settings import get_document_intelligence_settings
 
 bp = func.Blueprint()
 
-@bp.route(route="documentIntelligence", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
+@bp.route(route="documentIntelligence", auth_level=func.AuthLevel.FUNCTION, methods=['POST'])
 async def document_intelligence(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Document intelligence request')

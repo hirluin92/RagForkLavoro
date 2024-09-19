@@ -11,7 +11,7 @@ from utils.settings import get_storage_settings
 bp = func.Blueprint()
 
 
-@bp.route(route="convertDocxToMd", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
+@bp.route(route="convertDocxToMd", auth_level=func.AuthLevel.FUNCTION, methods=['POST'])
 async def convert_docx_to_md(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Convert DOCX to MD request.')

@@ -12,7 +12,7 @@ import constants.event_types as event_types
 bp = func.Blueprint()
 
 
-@bp.route(route="chunkingEmptyRows", auth_level=func.AuthLevel.ANONYMOUS, methods=['POST'])
+@bp.route(route="chunkingEmptyRows", auth_level=func.AuthLevel.FUNCTION, methods=['POST'])
 async def chunkingEmptyRows(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
         logger.info('Chunking Empty Rows request.')
