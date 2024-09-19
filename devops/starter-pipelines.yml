@@ -51,6 +51,7 @@ stages:
     sonarScannerExtraProperties: |
         sonar.sources=$(System.DefaultWorkingDirectory)
         sonar.projectBaseDir=$(System.DefaultWorkingDirectory)/
+        sonar.coverageReportPaths=$(System.DefaultWorkingDirectory)/publish/SonarQube.xml
 
 
 - template: release-stages/azure/release-stages.yaml@CommonTemplates

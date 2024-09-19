@@ -18,7 +18,7 @@ async def test_a_convert_docx_to_md_ok(mocker, monkeypatch):
     mock_logger = MockLogger()
     mock_value_data = mocker.Mock()
     mock_value_data.fileUrl = "https://local.blob.core.windows.net/data1/auu/assegno_unico_prova.docx"
-    mock_value_data.fileSasToken = ""
+    mock_value_data.fileSasToken = "?sasToken"
 
     mock_value = mocker.Mock()
     mock_value.recordId = "123"
@@ -35,17 +35,16 @@ async def test_a_convert_docx_to_md_ok(mocker, monkeypatch):
                  return_value="mysastoken")
 
     mocker.patch("logics.convert_docx_to_md.get_blob_info_container_and_blobName",
-                 return_value=("container", "name"))
+                 return_value=("container", "file.docx"))
 
     mock_text_content = io.StringIO("some initial text data")
     mocker.patch("logics.convert_docx_to_md.a_get_blob_stream_from_container",
                  return_value=mock_text_content)
 
-    data_from_mammoth = mocker.Mock()
-    data_from_mammoth.value = "some initial text data"
+    data_text_mock = "some initial text data"
 
     mocker.patch("logics.convert_docx_to_md.extract_text_and_hyperlink",
-                 return_value=data_from_mammoth)
+                 return_value=data_text_mock)
 
     # Act
     results = await a_convert_docx_to_md(mock_data, mock_logger)
@@ -82,8 +81,7 @@ async def test_a_convert_docx_to_md_error(mocker, monkeypatch):
     mocker.patch("logics.convert_docx_to_md.a_get_blob_stream_from_container",
                  return_value=mock_text_content)
 
-    data_from_mammoth = mocker.Mock()
-    data_from_mammoth.value = "some initial text data"
+    data_text_mock = "some initial text data"
 
     exception = Exception('error')
     mocker.patch("logics.convert_docx_to_md.extract_text_and_hyperlink",
