@@ -67,8 +67,6 @@ def extract_text_and_hyperlink(stream: bytes) -> str:
         else:
             md_link = f"[{text}]({link['href']})"
         link.replace_with(md_link)       
-    text = ""
-    all_tags = soup.find_all()
-    for tag in all_tags:
-        text = text + " " + tag.get_text()
-    return text
+    text = soup.get_text(strip=True, separator=" ")
+    cleanText = text.replace("\xa0", "")
+    return cleanText
