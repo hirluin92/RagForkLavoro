@@ -11,6 +11,8 @@ from services.cqa import a_do_query as cqa_do_query
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
             session: ClientSession) -> RagOrchestratorResponse:
+    # workaround per content filter:
+    request.query = request.query.lower()
     cqa_result = await cqa_do_query(request.query, request.tags[0], logger)
 
     # Se CQA è in grado di gestire la richiesta restituisco subito la risposta
