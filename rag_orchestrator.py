@@ -56,19 +56,20 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                     query_response, default=lambda x: x.__dict__)
                 
                 # Log statistici
-                response_source = ""
-                if query_response.cqa_data: 
-                    response_source = "CQA"
-                elif query_response.llm_data:
-                    response_source = "LLM"
-                else:
-                    response_source = "Undefined"
+                # response_source = ""
+                # if query_response.cqa_data: 
+                #     response_source = "CQA"
+                # elif query_response.llm_data:
+                #     response_source = "LLM"
+                # else:
+                #     response_source = "Undefined"
                                     
                 logger.track_event(event_types.rag_orchestrator_performed_event,
                             {
-                                "response-body": json_content,
-                                "topic": request.tags[0],
-                                "response_source": response_source
+                                "response-body": json_content
+                                # ,
+                                # "topic": request.tags[0],
+                                # "response_source": response_source
                             })
                 
                 return func.HttpResponse(json_content, mimetype="application/json")
