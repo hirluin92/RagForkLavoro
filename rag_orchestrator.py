@@ -40,7 +40,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                                         mimetype="application/problem+json")
 
         # Validazione modello
-        try:
+        try: 
             req_body = req.get_json()
             request = RagOrchestratorRequest.model_validate(req_body)
 
