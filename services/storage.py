@@ -72,10 +72,14 @@ async def a_get_blob_content_from_container(container: str, filename: str):
     blob_service_client = get_blob_service_client()
     blob_client = blob_service_client.get_blob_client(container,
                                                       filename)
-    downloader = await blob_client.download_blob(max_concurrency=1, encoding='UTF-8')
+    downloader = await blob_client.download_blob(max_concurrency=1)
     blob_text = await downloader.readall()
+    try:
+        text = blob_text.decode('utf-8')
+    except UnicodeDecodeError:
+        text = blob_text.decode('cp1252')
     await blob_client.close()
-    return blob_text
+    return text
 
 
 async def a_get_blob_stream_from_container(container: str, filename: str):
