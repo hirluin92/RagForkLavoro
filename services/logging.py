@@ -1,11 +1,9 @@
-
 from logging import getLogger
 import azure.functions as func
-from azure.monitor.events.extension import track_event
+# from azure.monitor.events.extension import track_event
 
-from opentelemetry.context import attach, detach
-from opentelemetry.trace.propagation.tracecontext import \
-  TraceContextTextMapPropagator
+# from opentelemetry.context import attach, detach
+# from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 class LoggerBuilder:
     def __init__(self, name: str, context: func.Context):
@@ -13,15 +11,16 @@ class LoggerBuilder:
         self.context = context
 
     def __enter__(self):
-        functions_current_context = {
-            "traceparent": self.context.trace_context.Traceparent,
-            "tracestate": self.context.trace_context.Tracestate
-        }
-        parent_context = TraceContextTextMapPropagator().extract(
-            carrier=functions_current_context
-        )
-        self.token = attach(parent_context)
-        return Logger(self.name, self.context.invocation_id, self.context.trace_context.Traceparent.split('-')[1])
+        # functions_current_context = {
+        #     "traceparent": self.context.trace_context.Traceparent,
+        #     "tracestate": self.context.trace_context.Tracestate
+        # }
+        # parent_context = TraceContextTextMapPropagator().extract(
+        #     carrier=functions_current_context
+        # )
+        # self.token = attach(parent_context)
+        # return Logger(self.name, self.context.invocation_id, self.context.trace_context.Traceparent.split('-')[1])
+        return Logger(self.name, "nd", "nd")
 
     def __exit__(self, *args):
         detach(self.token)
@@ -50,7 +49,7 @@ class Logger:
 
     def track_event(self, event_name: str, properties: dict):
         properties.update({"InvocationId": self.invocation_id})
-        track_event(event_name, properties)
+        #track_event(event_name, properties)
 
     def get_operation_id(self):
         return self.operation_id
