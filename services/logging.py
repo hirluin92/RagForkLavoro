@@ -2,7 +2,7 @@ from logging import getLogger
 import azure.functions as func
 # from azure.monitor.events.extension import track_event
 
-# from opentelemetry.context import attach, detach
+#from opentelemetry.context import attach, detach
 # from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 class LoggerBuilder:
@@ -23,7 +23,8 @@ class LoggerBuilder:
         return Logger(self.name, "nd", "nd")
 
     def __exit__(self, *args):
-        detach(self.token)
+        #detach(self.token)
+        pass
     
  
 class Logger:
