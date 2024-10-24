@@ -12,3 +12,4 @@ class CQASettings(BaseSettings):
     knowledgebase_project: str = Field(alias='CQA_KnowledgeBaseProject')
     knowledgebase_project_dco: str = Field(alias='CQA_KnowledgeBaseProjectDCO')
     tags_dco: str = Field(alias='CQA_TagsDCO')
+    config_container: str = Field(alias='CQA_ConfigContainer')
