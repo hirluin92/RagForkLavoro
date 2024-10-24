@@ -110,6 +110,9 @@ async def test_cqa_answer_hi_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
+    # Mock del metodo a_get_cqa_project_by_topic
+    mocker.patch('services.cqa.a_get_cqa_project_by_topic', return_value=("mock_project", "mock_deployment"))
+
     result = await a_do_query(query, "", logger)
 
     assert result.text_answer 
@@ -132,6 +135,9 @@ async def test_cqa_answer_low_confidence(mocker, monkeypatch):
     cqa_mock_client.get_answers.return_value = cqa_mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value=cqa_mock_client)
 
+    # Mock del metodo a_get_cqa_project_by_topic
+    mocker.patch('services.cqa.a_get_cqa_project_by_topic', return_value=("mock_project", "mock_deployment"))
+
     result = await a_do_query(query, "", logger)
 
     assert result == None
@@ -151,6 +157,9 @@ async def test_cqa_answer_out_of_context(mocker, monkeypatch):
     cqa_mock_client = mocker.AsyncMock() 
     cqa_mock_client.get_answers.return_value = mock_response
     mocker.patch('services.cqa.get_question_answering_client', return_value = cqa_mock_client)
+
+    # Mock del metodo a_get_cqa_project_by_topic
+    mocker.patch('services.cqa.a_get_cqa_project_by_topic', return_value=("mock_project", "mock_deployment"))
 
     result = await a_do_query(query, "", logger)
 
