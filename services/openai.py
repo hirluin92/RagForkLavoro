@@ -153,6 +153,9 @@ async def a_get_enriched_query(query: str,
         result_content = await result_content_parser.ainvoke(prompt_and_model_result)
     except APIConnectionError as e:
         logger.exception(f"APIConnectionError: {e}")
+        result_content = EnrichmentQueryResponse(standalone_question="",
+                                                 end_conversation=True,
+                                                 end_conversation_reason=llm_const.default_content_filter_answer)
     except Exception as e:
         if e.status_code == 400:
             logger.exception(e.message)
