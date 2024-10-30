@@ -3,6 +3,8 @@ from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from typing import List
+
+from openai import APIConnectionError
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
@@ -11,6 +13,7 @@ import constants.llm as llm_const
 import constants.prompt as prompt_const
 from services.storage import a_get_blob_content_from_container
 from utils.settings import get_app_settings, get_openai_settings, get_storage_settings
+
 
 async def a_generate_embedding_from_text(text: str):
     """
@@ -24,12 +27,13 @@ async def a_generate_embedding_from_text(text: str):
                                        check_embedding_ctx_length=False)
     return await embeddings.aembed_query(text)
 
+
 async def a_get_answer_from_context(question: str,
-                            context: List[LlmContextContent],
-                            system_prompt: str,
-                            system_links_prompt: str,
-                            user_prompt:str,
-                            logger: Logger) -> RagResponse:
+                                    context: List[LlmContextContent],
+                                    system_prompt: str,
+                                    system_links_prompt: str,
+                                    user_prompt: str,
+                                    logger: Logger) -> RagResponse:
     """
     Get an answer from a context
     """
@@ -40,12 +44,12 @@ async def a_get_answer_from_context(question: str,
             ("human", user_prompt),
         ]
     )
-    llm = AzureChatOpenAI(azure_endpoint = settings.completion_endpoint,
-                          azure_deployment = settings.completion_deployment_model,
-                          api_version = settings.api_version,
-                          api_key = settings.completion_key,
-                          temperature = settings.completion_temperature, 
-                          max_tokens = settings.completion_tokens,
+    llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
+                          azure_deployment=settings.completion_deployment_model,
+                          api_version=settings.api_version,
+                          api_key=settings.completion_key,
+                          temperature=settings.completion_temperature,
+                          max_tokens=settings.completion_tokens,
                           timeout=30)
 
     chain = (
@@ -54,15 +58,15 @@ async def a_get_answer_from_context(question: str,
     )
 
     data_to_log = {
-            "endpoint": settings.completion_endpoint,
-            "deployment": settings.completion_deployment_model,
-            "api_version": settings.api_version,
-            "temperature": settings.completion_temperature, 
-            "max_tokens": settings.completion_tokens
-        }
+        "endpoint": settings.completion_endpoint,
+        "deployment": settings.completion_deployment_model,
+        "api_version": settings.api_version,
+        "temperature": settings.completion_temperature,
+        "max_tokens": settings.completion_tokens
+    }
 
     logger.track_event(event_types.llm_answer_generation_openai_request,
-                           data_to_log)
+                       data_to_log)
 
     prompt_and_model_result = await chain.ainvoke(
         {
@@ -70,21 +74,23 @@ async def a_get_answer_from_context(question: str,
             "question": question,
             "context": context
         })
-    
-    logger.track_event(event_types.llm_answer_generation_response_event,
-                           {"answer": prompt_and_model_result.json()})
 
-    result_content_parser = PydanticOutputParser(pydantic_object=RagResponseOutputParser)
+    logger.track_event(event_types.llm_answer_generation_response_event,
+                       {"answer": prompt_and_model_result.json()})
+
+    result_content_parser = PydanticOutputParser(
+        pydantic_object=RagResponseOutputParser)
     result_content = await result_content_parser.ainvoke(prompt_and_model_result)
 
     return RagResponse(result_content.response,
                        result_content.references,
                        prompt_and_model_result.response_metadata.get("finish_reason", "ND"))
 
+
 async def a_get_enriched_query(query: str,
-                       topic: str,
-                       chat_history: str,
-                       logger: Logger) -> EnrichmentQueryResponse:
+                               topic: str,
+                               chat_history: str,
+                               logger: Logger) -> EnrichmentQueryResponse:
     """
         Contatta il servizio di OpenAI, per migliorare il testo della richiesta.
         Restituisce una EnrichmentQueryResponse, in cui il valore della proprietà EndConversation = true, 
@@ -97,23 +103,23 @@ async def a_get_enriched_query(query: str,
 
     # Caricamento delle risorse
     enrichment_prompt_template = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        prompt_const.ENRICHMENT_SYSTEM)
+                                                                         prompt_const.ENRICHMENT_SYSTEM)
     user_message_template = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        prompt_const.ENRICHMENT_USER)
+                                                                    prompt_const.ENRICHMENT_USER)
     # Costruzione chain
     prompt = ChatPromptTemplate.from_messages([
         ("system", enrichment_prompt_template),
         ("user", user_message_template)
     ])
-    
-    llm = AzureChatOpenAI(azure_endpoint = openai_settings.completion_endpoint,
-                          azure_deployment = openai_settings.completion_deployment_model,
-                          api_version = openai_settings.api_version,
-                          api_key = openai_settings.completion_key,
-                          temperature = openai_settings.completion_temperature, 
-                          max_tokens = openai_settings.completion_tokens)
-    
-    chain = prompt | llm.with_retry() 
+
+    llm = AzureChatOpenAI(azure_endpoint=openai_settings.completion_endpoint,
+                          azure_deployment=openai_settings.completion_deployment_model,
+                          api_version=openai_settings.api_version,
+                          api_key=openai_settings.completion_key,
+                          temperature=openai_settings.completion_temperature,
+                          max_tokens=openai_settings.completion_tokens)
+
+    chain = prompt | llm.with_retry()
 
     data_to_log = {
         "systemPrompt": enrichment_prompt_template,
@@ -123,7 +129,7 @@ async def a_get_enriched_query(query: str,
         "topic": topic,
         "enrichment_by_topic_enabled": app_settings.enrichment_by_topic_enabled
     }
-    
+
     logger.track_event(event_types.llm_enrichment_request_event, data_to_log)
 
     topic_to_chain = ""
@@ -133,17 +139,20 @@ async def a_get_enriched_query(query: str,
     result_content = None
 
     try:
-        prompt_and_model_result =  await chain.ainvoke({
-        "topic": topic_to_chain,
-        "chat_history": chat_history,
-        "question": query
+        prompt_and_model_result = await chain.ainvoke({
+            "topic": topic_to_chain,
+            "chat_history": chat_history,
+            "question": query
         })
-        
-        logger.track_event(event_types.llm_enrichment_response_event,
-                            {"enrichedQuery": prompt_and_model_result.json()})
 
-        result_content_parser = PydanticOutputParser(pydantic_object=EnrichmentQueryResponse)
+        logger.track_event(event_types.llm_enrichment_response_event,
+                           {"enrichedQuery": prompt_and_model_result.json()})
+
+        result_content_parser = PydanticOutputParser(
+            pydantic_object=EnrichmentQueryResponse)
         result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+    except APIConnectionError as e:
+        logger.exception(f"APIConnectionError: {e}")
     except Exception as e:
         if e.status_code == 400:
             logger.exception(e.message)
