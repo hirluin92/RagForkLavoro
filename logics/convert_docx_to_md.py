@@ -1,4 +1,5 @@
 import json
+from typing import Any
 import azure.functions as func
 from models.apis.movefiles_request_body import MoveFilesRequestBody, ValueFromAzAISearch
 from models.apis.movefiles_response_body import (
@@ -13,16 +14,17 @@ from services.storage import generate_blob_sas_from_blob_client, get_blob_client
 import mammoth
 from bs4 import BeautifulSoup
 
-async def a_convert_docx_to_md(req_body: ConvertDocxToMdRequestBody,
+async def a_extract_hyperlink_from_files(req_body: ConvertDocxToMdRequestBody,
                                context: func.Context) -> ConvertDocxToMdResponseBody:
     result = ConvertDocxToMdResponseBody()
     for value in req_body.values:
-        moved_record = await a_convert_docx(value, context)
-        result.addValue(moved_record)
+        processed_record = await a_process_file_with_hyperlink(value, context)
+        result.addValue(processed_record)
     return result
 
 
-async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> ValueToAzAISearch:
+
+async def a_process_file_with_hyperlink(item: ValueFromAzAISearch, context: func.Context) -> ValueToAzAISearch:
     with LoggerBuilder(__name__, context) as logger:
         blob_storage_path = item.data.fileUrl
         sas_token = item.data.fileSasToken
@@ -36,9 +38,11 @@ async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> Va
         blob_from_container = blob_from_info[0]
         blob_name = blob_from_info[1]
         try:
+            stream = await a_get_blob_stream_from_container(blob_from_container, blob_name)          
             if blob_name.endswith('.docx'):
-                with await a_get_blob_stream_from_container(blob_from_container, blob_name) as stream:
-                    finalText = extract_text_and_hyperlink(stream)
+                finalText = extract_text_and_hyperlink_from_docx(stream)
+            elif blob_name.endswith('.html'):
+                finalText = extract_text_and_hyperlink_from_html(stream)
             else:
                 finalText = await a_get_blob_content_from_container(blob_from_container, blob_name)
             return ValueToAzAISearch(item.recordId,
@@ -55,9 +59,20 @@ async def a_convert_docx(item: ValueFromAzAISearch, context: func.Context) -> Va
             return error_to_return
 
 
-def extract_text_and_hyperlink(stream: bytes) -> str:
+def extract_text_and_hyperlink_from_docx(stream: bytes) -> str:
     result = mammoth.convert_to_html(stream)
     htmlText = result.value
+    cleanText = get_hyperlink_into_md(htmlText)
+    return cleanText
+
+
+def extract_text_and_hyperlink_from_html(stream: bytes) -> str:
+    content = stream.getvalue().decode('utf-8', errors='ignore')
+    cleanText = get_hyperlink_into_md(content)
+    return cleanText
+
+
+def get_hyperlink_into_md(htmlText: Any):
     soup = BeautifulSoup(htmlText, 'html.parser')
     hyperLinks = soup.find_all('a', href=True)
     for link in hyperLinks:
