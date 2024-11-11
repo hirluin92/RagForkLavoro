@@ -1,6 +1,6 @@
 import logging
 import azure.functions as func
-#from azure.monitor.opentelemetry import configure_azure_monitor
+from azure.monitor.opentelemetry import configure_azure_monitor
 import check_status
 import document_intelligence
 import rag_orchestrator
@@ -11,7 +11,7 @@ import move_files
 import chunking_empty_rows
 import convert_docx_to_md
 
-#configure_azure_monitor()
+configure_azure_monitor()
 logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
 logging.getLogger("azure.monitor.opentelemetry.exporter.export").setLevel(logging.WARNING)
 
