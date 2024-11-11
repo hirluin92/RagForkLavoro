@@ -1,10 +1,10 @@
-import json
 from logging import getLogger
 import azure.functions as func
-# from azure.monitor.events.extension import track_event
+from azure.monitor.events.extension import track_event
 
-# from opentelemetry.context import attach, detach
-# from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.context import attach, detach
+from opentelemetry.trace.propagation.tracecontext import \
+    TraceContextTextMapPropagator
 
 
 class LoggerBuilder:
@@ -13,20 +13,18 @@ class LoggerBuilder:
         self.context = context
 
     def __enter__(self):
-        # functions_current_context = {
-        #     "traceparent": self.context.trace_context.Traceparent,
-        #     "tracestate": self.context.trace_context.Tracestate
-        # }
-        # parent_context = TraceContextTextMapPropagator().extract(
-        #     carrier=functions_current_context
-        # )
-        # self.token = attach(parent_context)
-        # return Logger(self.name, self.context.invocation_id, self.context.trace_context.Traceparent.split('-')[1])
-        return Logger(self.name, "nd", "nd")
+        functions_current_context = {
+            "traceparent": self.context.trace_context.Traceparent,
+            "tracestate": self.context.trace_context.Tracestate
+        }
+        parent_context = TraceContextTextMapPropagator().extract(
+            carrier=functions_current_context
+        )
+        self.token = attach(parent_context)
+        return Logger(self.name, self.context.invocation_id, self.context.trace_context.Traceparent.split('-')[1])
 
     def __exit__(self, *args):
-        # detach(self.token)
-        pass
+        detach(self.token)
 
 
 class Logger:
@@ -36,25 +34,25 @@ class Logger:
         self.operation_id = operation_id
 
     def info(self, message):
-        self.logger.info("INFO: " + message,
-                         extra={"InvocationId": self.invocation_id})
+        self.logger.info(message, extra={"InvocationId": self.invocation_id})
+
+    def info(self, message):
+        self.logger.info(message, extra={"InvocationId": self.invocation_id})
 
     def warning(self, message):
         self.logger.warning(
-            "WARN: " + message, extra={"InvocationId": self.invocation_id})
+            message, extra={"InvocationId": self.invocation_id})
 
     def error(self, message):
-        self.logger.error("ERROR: " + message,
-                          extra={"InvocationId": self.invocation_id})
+        self.logger.error(message, extra={"InvocationId": self.invocation_id})
 
     def exception(self, message):
         self.logger.exception(
-            "EXCEPTION: " + message, extra={"InvocationId": self.invocation_id})
+            message, extra={"InvocationId": self.invocation_id})
 
     def track_event(self, event_name: str, properties: dict):
         properties.update({"InvocationId": self.invocation_id})
-        self.logger.info("CUSTOM EVENT: " + event_name + " " + json.dumps(properties),
-                         extra={"InvocationId": self.invocation_id})
+        track_event(event_name, properties)
 
     def get_operation_id(self):
         return self.operation_id
