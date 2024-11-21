@@ -11,7 +11,12 @@ import move_files
 import chunking_empty_rows
 import convert_docx_to_md
 
-configure_azure_monitor()
+try: 
+    configure_azure_monitor()
+except Exception as e:
+    logging.critical(f"Failed to configure Azure Monitor: {e}")
+    raise
+
 logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
 logging.getLogger("azure.monitor.opentelemetry.exporter.export").setLevel(logging.WARNING)
 
