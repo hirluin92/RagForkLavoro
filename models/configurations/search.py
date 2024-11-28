@@ -7,6 +7,7 @@ class SearchSettings(BaseSettings):
     api_version: str
     endpoint:str
     index: str
+    index_production: str
     index_semantic_configuration: str
     k: int
     key: str

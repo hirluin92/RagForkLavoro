@@ -6,6 +6,7 @@ from logics.rag_query import (
     build_response_for_user,
     a_execute_query)
 from rag_query import a_query as rag_query_endpoint
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from services.search import a_query
 from tests.mock_aiohttp import MockClientResponse, MockClientSession
 from tests.mock_env import set_mock_env
@@ -110,8 +111,10 @@ async def test_get_from_index_ko(mocker, monkeypatch):
     mock_logger = MockLogger()
     set_mock_env(monkeypatch)
 
-    question = "question"
-    tags = ["tag"]
+    request = {
+        "question": "question",
+        "interactions": ["tag"]
+    }
 
     mocker.patch("aiohttp.ClientSession.post",
                  side_effect=Exception)
@@ -119,7 +122,7 @@ async def test_get_from_index_ko(mocker, monkeypatch):
     # Act
     # Assert
     with pytest.raises(Exception):
-        await a_query(question, [1], tags, mock_logger)
+        await a_query(json.loads(request), [1], mock_logger)
 
 @pytest.mark.asyncio
 async def test_get_from_index_ok(mocker,
@@ -128,9 +131,6 @@ async def test_get_from_index_ok(mocker,
     set_mock_env(monkeypatch)
 
     mock_logger = MockLogger()
-
-    question = "question"
-    tags = ["tag"]
 
     mock_response_json_answer = {
         "key": "key",
@@ -156,8 +156,10 @@ async def test_get_from_index_ok(mocker,
     mock_response = MockClientResponse(response_data,200)
     mock_session = MockClientSession(mock_response)
 
+    request = RagOrchestratorRequest(query="Cosa è l'assegno unico?", llm_model_id="OPENAI", tags= ["auu"], environment="staging")
+
     # Act
-    result = await a_query(mock_session,question, [], tags, mock_logger)
+    result = await a_query(mock_session, request, [], mock_logger)
     # Assert
     assert result.data_context == "context"
     assert result.data_count == 1
@@ -182,8 +184,11 @@ async def test_execute_query_empty_search_results_ok(mocker):
         return_value=mock_search_result
     )
     mock_session = mocker.Mock()
+
+    request = RagOrchestratorRequest(query="query", llm_model_id="llm", tags= ["auu"], environment="staging")
+
     # Act
-    result = await a_execute_query("llm", "query", ["auu"], mock_logger, mock_session)
+    result = await a_execute_query(request, mock_logger, mock_session)
     # Arrange
     assert result.response == llm_const.default_answer
     assert len(result.links) == 0
@@ -230,8 +235,11 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
         return_value=mock_rag_response
     )
     mock_session = mocker.Mock()
+
+    request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.mistralai, tags= ["auu"], environment="staging")
+
     # Act
-    result = await a_execute_query(llm_const.mistralai, "query", ["auu"], mock_logger,mock_session)
+    result = await a_execute_query(request, mock_logger,mock_session)
     # Arrange
     assert result.response == "query answer"
     assert len(result.links) == 1
@@ -278,8 +286,11 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
         return_value=mock_rag_response
     )
     mock_session = mocker.Mock()
+
+    request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.openai, tags= ["auu"], environment="staging")
+
     # Act
-    result = await a_execute_query(llm_const.openai, "query", ["auu"], mock_logger,mock_session)
+    result = await a_execute_query(request, mock_logger,mock_session)
     # Arrange
     assert result.response == "query answer"
     assert len(result.links) == 1
@@ -295,7 +306,8 @@ async def test_query_ok(mocker, monkeypatch):
     req_body = {
         "query": "query",
         "llm_model_id": "model",
-        "tags": []
+        "tags": [],
+        "environment":"staging"
     }
 
     mock_result = mocker.Mock()
@@ -332,7 +344,8 @@ async def test_query_ko(mocker, monkeypatch):
     req_body = {
         "query": "query",
         "llm_model_id": "model",
-        "tags": []
+        "tags": [],
+        "environment":"staging"
     }
 
     mock_language_service = mocker.Mock()
@@ -390,7 +403,8 @@ async def test_query_missing_environment_variables(mocker):
 
     req_body = {
         "question": "question",
-        "tags": []
+        "tags": [],
+        "environment":"staging"
     }
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},

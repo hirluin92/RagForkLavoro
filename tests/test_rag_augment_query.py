@@ -73,7 +73,8 @@ async def test_query_success(mocker, monkeypatch):
     req_body = {
         "query": "Aseno unco",
         "llm_model_id": llm_constants.openai,
-        "interactions": [{ "question": "fake", "answer": "fake" }]
+        "interactions": [{ "question": "fake", "answer": "fake" }],
+        "environment":"staging"
     }
 
     req = func.HttpRequest(method='POST',

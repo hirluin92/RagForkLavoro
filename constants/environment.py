@@ -1,0 +1,2 @@
+STAGING = "staging"
+PRODUCTION = "production"
