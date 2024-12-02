@@ -28,6 +28,6 @@ class AiQueryServiceOpenAI(AiQueryServiceBase):
 
     async def a_do_query(self, request: RagOrchestratorRequest,
                  logger: Logger,session: ClientSession)-> RagQueryResponse:
-        query_result = await a_execute_query(
-             llm_const.openai, request.query, request.tags, logger, session)
+        request.llm_model_id = llm_const.openai
+        query_result = await a_execute_query(request, logger, session)
         return query_result

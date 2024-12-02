@@ -19,16 +19,15 @@ import constants.llm as llm_const
 import constants.prompt as prompt_const
 from services.storage import a_get_blob_content_from_container
 from utils.settings import get_prompt_settings, get_storage_settings
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 
 
-async def a_execute_query(llm_model_id: str,
-                  question: str,
-                  tags: list[str],
+async def a_execute_query(request: RagOrchestratorRequest,
                   logger: Logger,
                   session: ClientSession) -> RagQueryResponse:
-    embedding = await openai_generate_embedding_from_text(question)
+    embedding = await openai_generate_embedding_from_text(request.query)
     search_result: SearchIndexResponse = await query_azure_ai_search(
-        session, question, embedding, tags, logger)
+        session, request, embedding, logger)
     search_result_context = build_question_context_from_search(search_result)
 
     if len(search_result_context) == 0:
@@ -41,7 +40,7 @@ async def a_execute_query(llm_model_id: str,
                                 [],
                                 [])
     response_from_llm = await a_get_response_from_llm(
-        llm_model_id, question, search_result_context, logger)
+        request.llm_model_id, request.query, search_result_context, logger)
     finish_reason = response_from_llm.finish_reason
     response_for_user = build_response_for_user(
         response_from_llm, search_result_context)

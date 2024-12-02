@@ -5,10 +5,11 @@ from models.configurations.search import SearchSettings
 from models.services.search_index_response import SearchIndexResponse
 import constants.event_types as event_types
 import constants.search as search_constants
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 
 from services.logging import Logger
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
-
+import constants.environment as env_const
 
 @retry(
     retry=retry_if_http_error(),
@@ -17,14 +18,13 @@ from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
     reraise=True
 )
 async def a_query(session: ClientSession,
-                  question: str,
+                  request: RagOrchestratorRequest,
                   embedding: list[str],
-                  tags: list[str],
                   logger: Logger) -> SearchIndexResponse:
     settings = SearchSettings()
     headers = {'Content-Type': 'application/json', 'api-key': settings.key}
     params = {'api-version': settings.api_version}
-    index = settings.index
+    #index = settings.index
     k = settings.k
     top = settings.top
     payload = {
@@ -32,14 +32,22 @@ async def a_query(session: ClientSession,
         "top": top
     }
 
-    if len(tags) > 0:
-        tagsToSearch = ",".join(tags)
+    if request.environment == env_const.STAGING: 
+        index = settings.index
+    elif request.environment == env_const.PRODUCTION:
+        index = settings.index_production
+    else:
+        errMsg = "env_const ({env_const}) not found"
+        raise Exception(errMsg.format(env_const = request.environment))
+
+    if len(request.tags) > 0:
+        tagsToSearch = ",".join(request.tags)
         filter = "tags/any(t: search.in(t, '{tagsToSearch}'))"
         payload["filter"] = filter.format(tagsToSearch=tagsToSearch)
 
     if (settings.search_method == search_constants.SEARCH_METHOD_HYBRID
         or settings.search_method == search_constants.SEARCH_METHOD_FULL_TEXT):
-        payload["search"] = question
+        payload["search"] = request.query
 
     if (settings.search_method == search_constants.SEARCH_METHOD_HYBRID
         or settings.search_method == search_constants.SEARCH_METHOD_VECTOR):

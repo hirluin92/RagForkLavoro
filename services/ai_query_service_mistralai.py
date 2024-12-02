@@ -29,9 +29,7 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
 
     async def a_do_query(self, request: RagOrchestratorRequest,
                  logger: Logger,session: ClientSession)-> RagQueryResponse:
-        query_result = await a_execute_query(request.llm_model_id,
-                                             request.query,
-                                             request.tags,
+        query_result = await a_execute_query(request,
                                              logger,
                                              session)
         return query_result

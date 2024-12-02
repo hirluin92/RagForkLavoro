@@ -17,6 +17,7 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("AZURE_SEARCH_API_VERSION" , "myAZURE_SEARCH_API_VERSION")
     monkeypatch.setenv("AZURE_SEARCH_ENDPOINT" , "myAZURE_SEARCH_ENDPOINT")
     monkeypatch.setenv("AZURE_SEARCH_INDEX" , "myAZURE_SEARCH_INDEX")
+    monkeypatch.setenv("AZURE_SEARCH_INDEX_PRODUCTION" , "myAZURE_SEARCH_INDEX_PRODUCTION")
     monkeypatch.setenv("AZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION" , "myAZURE_SEARCH_INDEX_SEMANTIC_CONFIGURATION")
     monkeypatch.setenv("AZURE_SEARCH_K" , "0")
     monkeypatch.setenv("AZURE_SEARCH_SEARCH_METHOD" , "HYBRID")
