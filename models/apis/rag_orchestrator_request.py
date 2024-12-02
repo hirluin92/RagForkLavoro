@@ -9,4 +9,4 @@ class RagOrchestratorRequest(BaseModel):
     llm_model_id: str  
     tags: list[str] = []
     interactions: list[Interaction]  = []
-    environment: str
+    environment: str = "production"
