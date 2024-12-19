@@ -1,7 +1,0 @@
-ANSWER_GENERATION_SYSTEM = "answer_generation_system_prompt.txt"
-ANSWER_GENERATION_USER = "answer_generation_user_prompt.txt"
-ENRICHMENT_SYSTEM = "enrichment_system_prompt.txt"
-ENRICHMENT_USER = "enrichment_user_prompt.txt"
-PARTIAL_LINKS_MARKDOWN= "partial_links_markdown_prompt.txt"
-PARTIAL_LINKS= "partial_links_prompt.txt"
-TAGS_MAPPING = "tags_mapping.json"

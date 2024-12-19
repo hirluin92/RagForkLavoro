@@ -1,10 +1,13 @@
 
-from pydantic import ValidationError 
+import aiohttp
+from pydantic import ValidationError
+import requests 
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 import json
 from services.logging import LoggerBuilder
 import azure.functions as func
+from services.prompt_editor import a_get_enrichment_prompt_data
 from utils.http_problem import Problem
 from utils.settings import (
     get_mistralai_settings,
@@ -35,11 +38,19 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
     try:
         req_body = req.get_json()
         request = RagOrchestratorRequest.model_validate(req_body)
-        
+            
+        #Get AI service (OpenAI or Mistral)
         language_service = AiQueryServiceFactory.get_instance(request.llm_model_id)
-        result = await language_service.a_do_query_enrichment(request, logger)
 
-        if result:
+        #Compute enrichment
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            #API get prompts
+            enrichment_prompt_data = await a_get_enrichment_prompt_data(request.prompts, logger, session)
+
+            #Verify llm model id request and prompts model from editor
+            if(request.llm_model_id != enrichment_prompt_data.llm_model):
+                raise requests.exceptions.HTTPError("Bad Request: The request llm model id  is different from prompt editor llm model.", response=None)
+            result = await language_service.a_do_query_enrichment(request, enrichment_prompt_data, logger)
             json_content = json.dumps(result.model_dump())
             return func.HttpResponse(json_content, mimetype="application/json")
     

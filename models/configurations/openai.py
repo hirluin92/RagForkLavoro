@@ -8,8 +8,6 @@ class OpenAISettings(BaseSettings):
     completion_deployment_model: str
     completion_endpoint:str
     completion_key: str
-    completion_temperature: float
-    completion_tokens: int
     embedding_deployment_model: str
     embedding_endpoint: str
     embedding_key: str

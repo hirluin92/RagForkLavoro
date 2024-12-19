@@ -6,6 +6,7 @@ import logics
 from logics.ai_query_service_base import AiQueryServiceBase
 from logics.ai_query_service_factory import AiQueryServiceFactory
 import logics.rag_orchestrator
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
 from models.apis.rag_query_response_body import RagQueryResponse
@@ -187,10 +188,18 @@ async def test_rag_orchestrator_cqa_success(mocker, monkeypatch):
 async def test_get_query_response_cqa_fail_then_succeed(mocker,monkeypatch):
     set_mock_env(monkeypatch)
     logger = mocker.Mock(spec=Logger)
-    mock_session = mocker.Mock()
-
+    mock_session = mocker.Mock()  
+    #Mock CQA
     test_rag_orchestrator_response = CQAResponse(text_answer="L'assegno unico è...", cqa_data={ "fake" : "fake"})
     mocker.patch('logics.rag_orchestrator.cqa_do_query', side_effect=[None, test_rag_orchestrator_response])
+    #Mock get prompt  
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)  
+    mocker.patch('logics.rag_orchestrator.a_get_enrichment_prompt_data', return_value = mock_prompt_data)
+    mocker.patch('logics.rag_orchestrator.a_get_completion_prompt_data', return_value = mock_prompt_data)
     
     mock_language_service = mocker.Mock(spec=AiQueryServiceBase)
     mock_language_service.a_do_query_enrichment.return_value = mocker.Mock(standalone_question="Cos'è l'assegno unico?",
@@ -198,21 +207,30 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker,monkeypatch):
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
     request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"], environment="staging")
+    
     result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
     assert result.cqa_data
     assert result.llm_data == None
-    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, logger)
+    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, mock_prompt_data, logger)
     
 @pytest.mark.asyncio
 async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkeypatch):
     set_mock_env(monkeypatch)
     logger = mocker.Mock(spec=Logger)
     mock_session = mocker.Mock()
-    
+    #Mock CQA
     mocker.patch('logics.rag_orchestrator.cqa_do_query', return_value = None)
+    #Mock get prompt  
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)  
+    mocker.patch('logics.rag_orchestrator.a_get_enrichment_prompt_data', return_value = mock_prompt_data)
+    mocker.patch('logics.rag_orchestrator.a_get_completion_prompt_data', return_value = mock_prompt_data)
     
     mock_language_service = mocker.Mock(spec=AiQueryServiceBase)
     mock_language_service.a_do_query_enrichment.return_value = mocker.Mock(standalone_question="Cos'è l'assegno unico?",
@@ -221,13 +239,13 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     mocker.patch('logics.ai_query_service_factory.AiQueryServiceFactory.get_instance', return_value=mock_language_service)
     
     request = RagOrchestratorRequest(query="Aseno unco", llm_model_id="OPENAI", interactions= [ { "question": "fake", "answer": "fake" } ], tags= ["auu"], environment="staging")
-    result = await logics.rag_orchestrator.a_get_query_response(request, logger,mock_session)
+    result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session)
     
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
     assert result.cqa_data == None
     assert result.llm_data 
-    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, logger)
+    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, mock_prompt_data, logger)
     
 def test_factory():
     

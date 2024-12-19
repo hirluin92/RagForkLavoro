@@ -4,6 +4,7 @@ import os
 
 from aiohttp import ClientSession
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import Interaction, RagOrchestratorRequest
 from models.apis.rag_query_response_body import RagQueryResponse
 from services.mssql import a_get_tags_by_tag_names
@@ -16,12 +17,12 @@ class AiQueryServiceBase(ABC):
         raise NotImplementedError()
     
     @abstractmethod
-    async def a_do_query(self, request: RagOrchestratorRequest,
+    async def a_do_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
                  logger: Logger,session: ClientSession) -> RagQueryResponse:
         pass
     
     @abstractmethod
-    async def a_do_query_enrichment(self, request: RagOrchestratorRequest,
+    async def a_do_query_enrichment(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
                             logger: Logger)-> EnrichmentQueryResponse:
         pass 
 

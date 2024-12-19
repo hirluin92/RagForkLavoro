@@ -3,6 +3,7 @@ from typing import List
 
 from aiohttp import ClientSession
 from constants import event_types
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_query_response_body import BestDocument, RagQueryResponse
 from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_context_content import RagContextContent
@@ -16,15 +17,13 @@ from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context)
 from services.search import a_query as query_azure_ai_search
 import constants.llm as llm_const
-import constants.prompt as prompt_const
-from services.storage import a_get_blob_content_from_container
-from utils.settings import get_prompt_settings, get_storage_settings
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 
 
 async def a_execute_query(request: RagOrchestratorRequest,
-                  logger: Logger,
-                  session: ClientSession) -> RagQueryResponse:
+                        prompt_data: PromptEditorResponseBody,
+                        logger: Logger,
+                        session: ClientSession) -> RagQueryResponse:
     embedding = await openai_generate_embedding_from_text(request.query)
     search_result: SearchIndexResponse = await query_azure_ai_search(
         session, request, embedding, logger)
@@ -39,18 +38,20 @@ async def a_execute_query(request: RagOrchestratorRequest,
                                 [],
                                 [],
                                 [])
+
     response_from_llm = await a_get_response_from_llm(
-        request.llm_model_id, request.query, search_result_context, logger)
-    finish_reason = response_from_llm.finish_reason
-    response_for_user = build_response_for_user(
-        response_from_llm, search_result_context)
+        request.query, search_result_context, prompt_data, logger)
+
+
+    response_for_user = build_response_for_user(response_from_llm, search_result_context)
     response_to_return = response_for_user[0]
     links_to_return = response_for_user[1]
     references_to_return = response_for_user[2]
-
+    finish_reason = response_from_llm.finish_reason
     context_ids_to_return = []
     context_to_return = []
     best_documents_to_return = []
+
     for item in search_result_context:
         context_ids_to_return.append(item.chunk_id)
         context_to_return.append(item.chunk)
@@ -65,6 +66,7 @@ async def a_execute_query(request: RagOrchestratorRequest,
             item.reference
         )
         best_documents_to_return.append(best_document)
+    
     return RagQueryResponse(response_to_return,
                             references_to_return,
                             finish_reason,
@@ -95,51 +97,32 @@ def build_question_context_from_search(search_result: SearchIndexResponse) -> li
 
     return sorted(content, key=lambda x: x.score, reverse=True)
 
-async def a_get_response_from_llm(llm_model_id: str,
-                          question: str,
+async def a_get_response_from_llm(question: str,
                           context: List[RagContextContent],
+                          prompt_data: PromptEditorResponseBody,
                           logger) -> RagResponse:
-    prompt_settings = get_prompt_settings()
-    storage_settings = get_storage_settings()
-    system_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        prompt_const.ANSWER_GENERATION_SYSTEM)
-    user_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        prompt_const.ANSWER_GENERATION_USER)
-    
-    system_links_prompt_name = prompt_const.PARTIAL_LINKS
-    if prompt_settings.answer_generation_markdown_enabled:
-        system_links_prompt_name = prompt_const.PARTIAL_LINKS_MARKDOWN
-
-    system_links_prompt = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                        system_links_prompt_name)
 
     context_to_send: list[LlmContextContent] = []
+    llm_model_id = prompt_data.llm_model
+    
     data_to_log = {
-        "systemPrompt": system_prompt,
-        "systemLinksPrompt": system_links_prompt,
-        "humanPrompt": user_prompt,
         "question": question,
     }
     for index, document in enumerate(context):
         context_to_send_to_append = LlmContextContent(document.chunk, document.reference, document.score) 
         context_to_send.append(context_to_send_to_append)
         data_to_log["context_" + str(index).zfill(2)] = json.dumps(context_to_send_to_append.toJSON())
-
     logger.track_event(event_types.llm_answer_generation_request_event, data_to_log)
-
+    
     if llm_model_id == llm_const.mistralai:
         return await mistralai_get_answer_from_context(question,
                                                  context_to_send,
-                                                 system_prompt,
-                                                 system_links_prompt,
-                                                 user_prompt,
+                                                 prompt_data,
                                                  logger)
     else:
         return await openai_get_answer_from_context(question,
                                               context_to_send,
-                                              system_prompt,
-                                              system_links_prompt,
-                                              user_prompt, 
+                                              prompt_data,
                                               logger)
 
 def build_response_for_user(rag_response: RagResponse,

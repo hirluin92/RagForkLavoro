@@ -1,3 +1,4 @@
+import json
 from logging import Logger
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
@@ -6,13 +7,13 @@ from typing import List
 
 from openai import APIConnectionError
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.services.llm_context_document import LlmContextContent
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
 import constants.event_types as event_types
 import constants.llm as llm_const
-import constants.prompt as prompt_const
-from services.storage import a_get_blob_content_from_container
-from utils.settings import get_app_settings, get_openai_settings, get_storage_settings
+from services.prompt_editor import build_prompt_messages
+from utils.settings import get_openai_settings
 
 
 async def a_generate_embedding_from_text(text: str):
@@ -30,50 +31,41 @@ async def a_generate_embedding_from_text(text: str):
 
 async def a_get_answer_from_context(question: str,
                                     context: List[LlmContextContent],
-                                    system_prompt: str,
-                                    system_links_prompt: str,
-                                    user_prompt: str,
+                                    prompt_data: PromptEditorResponseBody,
                                     logger: Logger) -> RagResponse:
     """
     Get an answer from a context
     """
     settings = get_openai_settings()
-    doc_search_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", user_prompt),
-        ]
-    )
+
+    prompt_messages = build_prompt_messages(prompt_data)
+    prompt = ChatPromptTemplate.from_messages(prompt_messages)
+    
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
                           azure_deployment=settings.completion_deployment_model,
                           api_version=settings.api_version,
                           api_key=settings.completion_key,
-                          temperature=settings.completion_temperature,
-                          max_tokens=settings.completion_tokens,
+                          temperature=prompt_data.model_parameters.temperature,
+                          max_tokens=prompt_data.model_parameters.max_length,
                           timeout=30)
 
-    chain = (
-        doc_search_prompt  # Passes the input variables above to the prompt template
-        | llm.with_retry()  # Passes the finished prompt to the LLM
-    )
+    chain = prompt | llm.with_retry() 
 
     data_to_log = {
+        "prompt_messages": json.dumps(prompt_messages),
         "endpoint": settings.completion_endpoint,
         "deployment": settings.completion_deployment_model,
         "api_version": settings.api_version,
-        "temperature": settings.completion_temperature,
-        "max_tokens": settings.completion_tokens
+        "temperature": prompt_data.model_parameters.temperature,
+        "max_tokens": prompt_data.model_parameters.max_length,
     }
-
     logger.track_event(event_types.llm_answer_generation_openai_request,
                        data_to_log)
+    
 
-    prompt_and_model_result = await chain.ainvoke(
-        {
-            "system_links_prompt": system_links_prompt,
-            "question": question,
-            "context": context
-        })
+    prompt_and_model_result = await chain.ainvoke({
+        llm_const.question_variable: question,
+        llm_const.context_variable: context})
 
     logger.track_event(event_types.llm_answer_generation_response_event,
                        {"answer": prompt_and_model_result.json()})
@@ -90,59 +82,44 @@ async def a_get_answer_from_context(question: str,
 async def a_get_enriched_query(query: str,
                                topic: str,
                                chat_history: str,
+                               prompt_data: PromptEditorResponseBody,
                                logger: Logger) -> EnrichmentQueryResponse:
     """
         Contatta il servizio di OpenAI, per migliorare il testo della richiesta.
         Restituisce una EnrichmentQueryResponse, in cui il valore della proprietà EndConversation = true, 
         indica un fallimento nell'operazione
     """
-    # Lettura parametri di configurazione
-    app_settings = get_app_settings()
-    openai_settings = get_openai_settings()
-    storage_settings = get_storage_settings()
+    settings = get_openai_settings()
 
-    # Caricamento delle risorse
-    enrichment_prompt_template = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                                         prompt_const.ENRICHMENT_SYSTEM)
-    user_message_template = await a_get_blob_content_from_container(storage_settings.prompt_files_container,
-                                                                    prompt_const.ENRICHMENT_USER)
-    # Costruzione chain
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", enrichment_prompt_template),
-        ("user", user_message_template)
-    ])
+    prompt_messages = build_prompt_messages(prompt_data)
+    prompt = ChatPromptTemplate.from_messages(prompt_messages)
+    
+    llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
+                          azure_deployment=settings.completion_deployment_model,
+                          api_version=settings.api_version,
+                          api_key=settings.completion_key,
+                          temperature=prompt_data.model_parameters.temperature,
+                          max_tokens=prompt_data.model_parameters.max_length,
+                          timeout=30)
 
-    llm = AzureChatOpenAI(azure_endpoint=openai_settings.completion_endpoint,
-                          azure_deployment=openai_settings.completion_deployment_model,
-                          api_version=openai_settings.api_version,
-                          api_key=openai_settings.completion_key,
-                          temperature=openai_settings.completion_temperature,
-                          max_tokens=openai_settings.completion_tokens)
-
-    chain = prompt | llm.with_retry()
+    chain = prompt | llm.with_retry() 
 
     data_to_log = {
-        "systemPrompt": enrichment_prompt_template,
-        "humanPrompt": user_message_template,
+        "prompt_messages": json.dumps(prompt_messages),
         "chat_history": chat_history,
         "question": query,
-        "topic": topic,
-        "enrichment_by_topic_enabled": app_settings.enrichment_by_topic_enabled
+        "topic": topic
     }
 
     logger.track_event(event_types.llm_enrichment_request_event, data_to_log)
-
-    topic_to_chain = ""
-    if app_settings.enrichment_by_topic_enabled:
-        topic_to_chain = topic
 
     result_content = None
 
     try:
         prompt_and_model_result = await chain.ainvoke({
-            "topic": topic_to_chain,
-            "chat_history": chat_history,
-            "question": query
+            llm_const.topic_variable: topic,
+            llm_const.question_variable: query,
+            llm_const.chat_variable: chat_history 
         })
 
         logger.track_event(event_types.llm_enrichment_response_event,

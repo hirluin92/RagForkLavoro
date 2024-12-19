@@ -46,3 +46,10 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv('STORAGE_UPLOADED_FILES_CONTAINER', 'container')
     monkeypatch.setenv('STORAGE_UPLOADED_SPLIT_FILES_CONTAINER', 'container')
     monkeypatch.setenv('PROMPT_ANSWER_GENERATION_MARKDOWN_ENABLED', 'False')
+    monkeypatch.setenv('PROMPT_EDITOR_API_KEY', 'prompt-editor-api-key')
+    monkeypatch.setenv('PROMPT_EDITOR_ENDPOINT', 'https://url...')
+    monkeypatch.setenv('PROMPT_ENRICHMENT_DEFAULT_ID', 'default-enrichment-id')
+    monkeypatch.setenv('PROMPT_ENRICHMENT_DEFAULT_VERSION', '1.0.0')
+    monkeypatch.setenv('PROMPT_COMPLETION_DEFAULT_ID', 'default-completion-id')
+    monkeypatch.setenv('PROMPT_COMPLETION_DEFAULT_VERSION', '1.0.0')
+

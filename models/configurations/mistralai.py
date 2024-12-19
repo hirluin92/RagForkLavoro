@@ -6,6 +6,4 @@ class MistralAISettings(BaseSettings):
     
     endpoint:str
     key: str
-    temperature: float
-    tokens: int
     model: str

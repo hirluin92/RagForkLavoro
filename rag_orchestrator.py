@@ -2,6 +2,7 @@ import aiohttp
 import azure.functions as func
 import json
 from pydantic import ValidationError
+import requests
 from constants import event_types
 from logics.rag_orchestrator import a_get_query_response
 from services.logging import LoggerBuilder

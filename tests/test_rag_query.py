@@ -5,6 +5,7 @@ from logics.rag_query import (
     build_question_context_from_search,
     build_response_for_user,
     a_execute_query)
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from rag_query import a_query as rag_query_endpoint
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from services.search import a_query
@@ -13,7 +14,6 @@ from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 import constants.llm as llm_const
 from utils.settings import (
-    get_app_settings,
     get_mistralai_settings,
     get_openai_settings,
     get_search_settings,
@@ -169,7 +169,11 @@ async def test_get_from_index_ok(mocker,
 async def test_execute_query_empty_search_results_ok(mocker):
     # Arrange
     mock_logger = MockLogger()
-
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
     mock_embedding = mocker.Mock()
     mocker.patch(
         "logics.rag_query.openai_generate_embedding_from_text",
@@ -188,7 +192,7 @@ async def test_execute_query_empty_search_results_ok(mocker):
     request = RagOrchestratorRequest(query="query", llm_model_id="llm", tags= ["auu"], environment="staging")
 
     # Act
-    result = await a_execute_query(request, mock_logger, mock_session)
+    result = await a_execute_query(request, mock_prompt_data, mock_logger, mock_session)
     # Arrange
     assert result.response == llm_const.default_answer
     assert len(result.links) == 0
@@ -198,9 +202,13 @@ async def test_execute_query_empty_search_results_ok(mocker):
 async def test_execute_query_mistralai_ok(mocker,monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
-
     mock_logger = MockLogger()
-
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='MISTRALAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
+    
     mock_embedding = mocker.Mock()
     mocker.patch(
         "logics.rag_query.openai_generate_embedding_from_text",
@@ -219,11 +227,6 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
     mocker.patch(
         "logics.rag_query.query_azure_ai_search",
         return_value=mock_search_result
-    )
-
-    mocker.patch(
-        "logics.rag_query.a_get_blob_content_from_container",
-        side_effect=["SYSTEM_PROMPT", "USER_PROMPT", "SYSTEM_LINKS_PROMPT"]
     )
 
     mock_rag_response = mocker.Mock()
@@ -239,7 +242,7 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
     request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.mistralai, tags= ["auu"], environment="staging")
 
     # Act
-    result = await a_execute_query(request, mock_logger,mock_session)
+    result = await a_execute_query(request, mock_prompt_data, mock_logger,mock_session)
     # Arrange
     assert result.response == "query answer"
     assert len(result.links) == 1
@@ -249,9 +252,13 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
 async def test_execute_query_openai_ok(mocker,monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
-
     mock_logger = MockLogger()
-
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
+    
     mock_embedding = mocker.Mock()
     mocker.patch(
         "logics.rag_query.openai_generate_embedding_from_text",
@@ -272,11 +279,6 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
         return_value=mock_search_result
     )
 
-    mocker.patch(
-        "logics.rag_query.a_get_blob_content_from_container",
-        side_effect=["SYSTEM_PROMPT", "USER_PROMPT", "SYSTEM_LINKS_PROMPT"]
-    )
-
     mock_rag_response = mocker.Mock()
     mock_rag_response.response = "query answer"
     mock_rag_response.finish_reason = "stop"
@@ -290,7 +292,7 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
     request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.openai, tags= ["auu"], environment="staging")
 
     # Act
-    result = await a_execute_query(request, mock_logger,mock_session)
+    result = await a_execute_query(request, mock_prompt_data, mock_logger,mock_session)
     # Arrange
     assert result.response == "query answer"
     assert len(result.links) == 1
@@ -300,16 +302,21 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
 async def test_query_ok(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
-
     set_mock_logger_builder(mocker)
 
     req_body = {
         "query": "query",
-        "llm_model_id": "model",
+        "llm_model_id": "OPENAI",
         "tags": [],
-        "environment":"staging"
+        "environment":"staging",
+        "prompt_editor": []
     }
-
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
+    
     mock_result = mocker.Mock()
     mock_result.toJSON.return_value = '{"response": "answer"}'
 
@@ -319,7 +326,7 @@ async def test_query_ok(mocker, monkeypatch):
         "rag_query.AiQueryServiceFactory.get_instance",
          return_value=mock_language_service
     )
-
+    mocker.patch('rag_query.a_get_completion_prompt_data', return_value = mock_prompt_data)
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
                            body=bytes(json.dumps(req_body), "utf-8"),
@@ -338,22 +345,27 @@ async def test_query_ok(mocker, monkeypatch):
 async def test_query_ko(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
-
     set_mock_logger_builder(mocker)
-
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
     req_body = {
         "query": "query",
         "llm_model_id": "model",
         "tags": [],
-        "environment":"staging"
+        "environment":"staging",
+        "prompt_editor": []
     }
 
     mock_language_service = mocker.Mock()
-    mock_language_service.a_do_query.side_effect = Exception("Error")
     mocker.patch(
         "rag_query.AiQueryServiceFactory.get_instance",
          return_value=mock_language_service
     )
+    mocker.patch('rag_query.a_get_completion_prompt_data', return_value = mock_prompt_data)
+    mock_language_service.a_do_query.side_effect = Exception("Error")
 
     req = func.HttpRequest(method='POST',
                            headers={'Content-Type': 'application/json'},
@@ -393,7 +405,6 @@ async def test_query_no_body(mocker, monkeypatch):
 @pytest.mark.asyncio
 async def test_query_missing_environment_variables(mocker):
     # Arrange
-    get_app_settings.cache_clear()
     get_mistralai_settings.cache_clear()
     get_openai_settings.cache_clear()
     get_search_settings.cache_clear()

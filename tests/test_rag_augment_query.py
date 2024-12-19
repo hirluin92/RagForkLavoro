@@ -2,6 +2,8 @@ import json
 import azure.functions as func
 import pytest
 
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from tests.mock_env import set_mock_env
 from tests.mock_logging import set_mock_logger_builder
 from rag_augment_query import a_augment_query as  rag_augmentQuery_endpoint
@@ -55,11 +57,16 @@ async def test_query_success(mocker, monkeypatch):
     
     # Arrange
     set_mock_env(monkeypatch)
-
     set_mock_logger_builder(mocker)
-
     mock_trace_context = mocker.Mock()
     
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= None)
+    mocker.patch('rag_augment_query.a_get_enrichment_prompt_data', return_value = mock_prompt_data)
+
     mock_result = mocker.Mock(standalone_question="answer",end_conversation=False)
     mock_result.model_dump.return_value= {"standalone_question": "answer"}
 
@@ -72,9 +79,10 @@ async def test_query_success(mocker, monkeypatch):
     
     req_body = {
         "query": "Aseno unco",
-        "llm_model_id": llm_constants.openai,
+        "llm_model_id": "OPENAI",
         "interactions": [{ "question": "fake", "answer": "fake" }],
-        "environment":"staging"
+        "environment":"staging",
+        "prompt_editor": []
     }
 
     req = func.HttpRequest(method='POST',

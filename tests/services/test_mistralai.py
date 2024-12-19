@@ -3,6 +3,7 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 import pytest
 
+from models.apis.prompt_editor_response_body import ModelParameters, PromptEditorResponseBody
 from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
 from services.mistralai import (a_get_answer_from_context as mistralai_get_answer_from_context, 
@@ -38,6 +39,12 @@ async def test_mistralai_get_answer_from_context(mocker,
     mock_context.chunk_id = "id"
     mock_context.toJSON.return_value = "json str"
     context = [mock_context]
+    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters) 
 
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_mistralai.complete.return_value = True
@@ -48,9 +55,7 @@ async def test_mistralai_get_answer_from_context(mocker,
     # Act
     result = await mistralai_get_answer_from_context(question,
                                                context,
-                                               "SYSTEM_PROMPT",
-                                               "SYSTEM_LINKS_PROMPT",
-                                               "USER_PROMPT",
+                                                mock_prompt_data,
                                                mock_logger)
 
     # Assert
@@ -64,8 +69,13 @@ async def test_do_query_enrichment(mocker,
     # Arrange
     set_mock_env(monkeypatch)
     mock_logger = MockLogger()
+    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters)
     
-    mocker.patch('services.mistralai.a_get_blob_content_from_container', side_effect=["prima", "seconda", '{"auu": "Assegno unico universale", "supportoformazionelavoro": "Supporto Formazione Lavoro"}'])
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_mistralai.complete.return_value = True
     mock_azure_chat_mistralai.content =  '{\n\t"standalone_question": "standalone question",\n    "end_conversation": false\n}'
@@ -77,7 +87,7 @@ async def test_do_query_enrichment(mocker,
     mock_parser.return_value = mock_parser_value
     
     # Act
-    result = await mistralai_get_enriched_query("testo di prova", ["auu"], "", mock_logger)
+    result = await mistralai_get_enriched_query("testo di prova", ["auu"], "", mock_prompt_data, mock_logger)
 
     # Assert
     assert result.standalone_question == "standalone question"

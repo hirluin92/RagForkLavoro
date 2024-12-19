@@ -1,16 +1,16 @@
 import json
-
 import aiohttp
 import azure.functions as func
 from pydantic import ValidationError
+import requests
 
 import constants.event_types as event_types
 from logics.ai_query_service_factory import AiQueryServiceFactory
-from models.apis.rag_query_request_body import RagQueryRequestBody
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest
+from services.prompt_editor import a_get_completion_prompt_data
 from utils.http_problem import Problem 
 from services.logging import LoggerBuilder
 from utils.settings import (
-    get_app_settings,
     get_mistralai_settings,
     get_openai_settings,
     get_prompt_settings,
@@ -26,7 +26,6 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
         logger.info('Query request')
         
         try:
-            get_app_settings()
             get_mistralai_settings()
             get_openai_settings()
             get_prompt_settings()
@@ -41,14 +40,23 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
 
         try:
             req_body = req.get_json()
-            request_body = RagQueryRequestBody.model_validate(req_body)
+            request = RagOrchestratorRequest.model_validate(req_body)
             logger.track_event(event_types.rag_query_requested_event,
                             {
                                "request-body": json.dumps(req_body)
                             })
-            language_service = AiQueryServiceFactory.get_instance(request_body.llm_model_id)
+    
+            #Get AI service (OpenAI or Mistral)
+            language_service = AiQueryServiceFactory.get_instance(request.llm_model_id)
+
             async with aiohttp.ClientSession(raise_for_status=True) as session:
-                result = await language_service.a_do_query(request_body, logger, session)
+                #API get prompts
+                completion_prompt_data = await a_get_completion_prompt_data(request.prompts, logger, session)
+
+                #Verify llm model id request and prompts model from editor
+                if(request.llm_model_id != completion_prompt_data.llm_model):
+                    raise requests.exceptions.HTTPError("Bad Request: The request llm model id  is different from prompt editor llm model.", response=None)
+                result = await language_service.a_do_query(request, completion_prompt_data, logger, session)
                 logger.track_event(event_types.rag_query_performed_event,
                                 {
                                 "response-body": result.toJSON()

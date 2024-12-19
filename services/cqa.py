@@ -3,11 +3,10 @@ import json
 from logging import Logger
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.language.questionanswering.aio import QuestionAnsweringClient
-from constants import event_types
+from constants import event_types, environment
 from models.configurations.cqa import CQASettings
 from models.services.cqa_response import CQAResponse
 from services.storage import a_get_blob_content_from_container
-import constants.prompt as prompt_const
  
 @cache
 def get_question_answering_client(key_credential: str,
@@ -64,7 +63,7 @@ async def a_do_query(query: str, topic:str, logger: Logger)-> CQAResponse:
     
 
 async def a_get_cqa_project_by_topic(container_name: str,topic:str, logger: Logger)-> tuple:
-    file_content = await a_get_blob_content_from_container(container_name, prompt_const.TAGS_MAPPING)
+    file_content = await a_get_blob_content_from_container(container_name, environment.TAGS_MAPPING)
     maps = json.loads(file_content)
     for elemento in maps:
         if elemento["ai_service"] == topic:
