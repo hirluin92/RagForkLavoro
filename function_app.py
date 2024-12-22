@@ -3,6 +3,7 @@ import azure.functions as func
 from azure.monitor.opentelemetry import configure_azure_monitor
 import check_status
 import document_intelligence
+import health_check
 import rag_orchestrator
 import metadata_tagging
 import rag_query
@@ -11,24 +12,27 @@ import move_files
 import chunking_empty_rows
 import convert_docx_to_md
 
-try: 
+try:
     configure_azure_monitor()
 except Exception as e:
     logging.critical(f"Failed to configure Azure Monitor: {e}")
     raise
 
-logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
-logging.getLogger("azure.monitor.opentelemetry.exporter.export").setLevel(logging.WARNING)
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(
+    logging.WARNING)
+logging.getLogger("azure.monitor.opentelemetry.exporter.export").setLevel(
+    logging.WARNING)
 
 
 app = func.FunctionApp()
 
-app.register_functions(check_status.bp) 
-app.register_functions(document_intelligence.bp) 
+app.register_functions(check_status.bp)
+app.register_functions(document_intelligence.bp)
 app.register_functions(move_files.bp)
 app.register_functions(rag_augment_query.bp)
-app.register_functions(rag_orchestrator.bp) 
+app.register_functions(rag_orchestrator.bp)
 app.register_functions(rag_query.bp)
 app.register_functions(metadata_tagging.bp)
 app.register_functions(chunking_empty_rows.bp)
 app.register_functions(convert_docx_to_md.bp)
+app.register_functions(health_check.bp)

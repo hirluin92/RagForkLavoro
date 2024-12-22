@@ -1,16 +1,13 @@
 from logging import Logger
 
 from aiohttp import ClientSession
-from pydantic import ValidationError
-import requests
 from constants import event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
 from services.cqa import a_do_query as cqa_do_query
-from services.prompt_editor import a_get_completion_prompt_data, a_get_enrichment_prompt_data  
-from utils.http_problem import Problem
+from services.prompt_editor import a_get_prompts_data
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -26,8 +23,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     #API get prompts
-    enrichment_prompt_data = await a_get_enrichment_prompt_data(request.prompts, logger, session)
-    completion_prompt_data = await a_get_completion_prompt_data(request.prompts, logger, session)
+    (enrichment_prompt_data, completion_prompt_data) = await a_get_prompts_data(request.prompts, logger, session)
 
     #Verify llm model id request and prompts model from editor
     if(request.llm_model_id != enrichment_prompt_data.llm_model or 

@@ -2,7 +2,6 @@ import aiohttp
 import azure.functions as func
 import json
 from pydantic import ValidationError
-import requests
 from constants import event_types
 from logics.rag_orchestrator import a_get_query_response
 from services.logging import LoggerBuilder
@@ -75,7 +74,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                 return func.HttpResponse(json_content, mimetype="application/json")
         except ValidationError as e:
             problem = Problem(422, "Bad Request", e.errors(), None, None)
-            return func.HttpResponse(json.dumps(problem.to_dict()),
+            return func.HttpResponse(json.dumps(problem.title),
                                      status_code=422,
                                      mimetype="application/problem+json")
         except Exception as e:
@@ -83,6 +82,6 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             problem = Problem(500, "Internal server error",
                               e.args[0], None, None)
             return func.HttpResponse(
-                json.dumps(problem.to_dict()),
+                json.dumps(problem.title),
                 status_code=500,
                 mimetype="application/problem+json")
