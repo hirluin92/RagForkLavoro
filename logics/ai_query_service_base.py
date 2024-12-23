@@ -26,9 +26,9 @@ class AiQueryServiceBase(ABC):
                             logger: Logger)-> EnrichmentQueryResponse:
         pass 
 
-    async def get_topic_from_tags(self, tags: list[str])->str:
+    async def get_topic_from_tags(self, logger: Logger, tags: list[str])->str:
         topic = ""
-        tags_from_repo = await a_get_tags_by_tag_names(tags)
+        tags_from_repo = await a_get_tags_by_tag_names(logger, tags)
         if len(tags_from_repo)>0:
             topic = ",".join([str(x.description) for x in tags_from_repo])
         return topic  
