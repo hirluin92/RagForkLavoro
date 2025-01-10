@@ -45,6 +45,11 @@ async def test_openai_get_answer_from_context(mocker,
     mock_context.toJSON.return_value = "json str"
     context = [mock_context]
 
+    mocker.patch(
+        "services.openai.check_prompt_variable",
+        return_value=True
+    )
+
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_openai.complete.return_value = True
     mock_parser_result = mocker.Mock()
@@ -76,6 +81,11 @@ async def test_do_query_enrichment(mocker,
                                                     parameters=[],
                                                     model_parameters= mock_model_parameters)
     
+    mocker.patch(
+        "services.openai.check_prompt_variable",
+        return_value=True
+    )
+
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_openai.complete.return_value = True
     mock_azure_chat_openai.content =  '{\n\t"standalone_question": "Quali sono i requisiti per accedere all\'Assegno Unico Universale?",\n    "end_conversation": false\n}'
