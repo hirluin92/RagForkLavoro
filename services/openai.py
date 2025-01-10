@@ -6,6 +6,7 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from typing import List
 
 from openai import APIConnectionError
+from exceptions.custom_exceptions import CustomPromptParameterError
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.services.llm_context_document import LlmContextContent
@@ -39,6 +40,16 @@ async def a_get_answer_from_context(question: str,
     settings = get_openai_settings()
 
     prompt_messages = build_prompt_messages(prompt_data)
+
+    # Check prompt parameter on prompt messages
+    parameters = [f"{{{llm_const.question_variable}}}", f"{{{llm_const.context_variable}}}"]
+    check = check_prompt_variable(prompt_messages, parameters)
+    if not check:
+        err_code = 432
+        mex = "Invalid completion prompt parameters"
+        custom_err = CustomPromptParameterError(mex, err_code)
+        raise custom_err
+    
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
@@ -92,6 +103,16 @@ async def a_get_enriched_query(query: str,
     settings = get_openai_settings()
 
     prompt_messages = build_prompt_messages(prompt_data)
+
+    # Check prompt parameter on prompt messages
+    parameters = [f"{{{llm_const.question_variable}}}", f"{{{llm_const.topic_variable}}}", f"{{{llm_const.chat_variable}}}"]
+    check = check_prompt_variable(prompt_messages, parameters)
+    if not check:
+        err_code = 433
+        mex = "Invalid enrichment prompt parameters"
+        custom_err = CustomPromptParameterError(mex, err_code)
+        raise custom_err
+    
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
@@ -143,3 +164,11 @@ async def a_get_enriched_query(query: str,
             raise e
 
     return result_content
+
+
+def check_prompt_variable(messages, parameters):
+    result_string = " | ".join([f"{item[0]} {item[1]}" for item in messages])
+    if all(p in result_string for p in parameters):
+        return True
+    else:
+        return False
