@@ -24,13 +24,9 @@ async def a_query(session: ClientSession,
                   logger: Logger) -> SearchIndexResponse:
     settings = SearchSettings()
     headers = {'Content-Type': 'application/json'}
-    
-    print("SEttings:", json.dumps(settings.dict()))
     if settings.authentication_method == "APIKey":
-        print("Using APIKey")
         headers['api-key'] = settings.key
     else:
-        print("Using RBAC")
         credential = DefaultAzureCredential()
         token = credential.get_token("https://search.azure.com/.default").token 
         headers['Authorization'] = f"Bearer {token}"
