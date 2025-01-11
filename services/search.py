@@ -6,6 +6,7 @@ from models.services.search_index_response import SearchIndexResponse
 import constants.event_types as event_types
 import constants.search as search_constants
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
+from azure.identity import DefaultAzureCredential
 
 from services.logging import Logger
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
@@ -22,7 +23,17 @@ async def a_query(session: ClientSession,
                   embedding: list[str],
                   logger: Logger) -> SearchIndexResponse:
     settings = SearchSettings()
-    headers = {'Content-Type': 'application/json', 'api-key': settings.key}
+    headers = {'Content-Type': 'application/json'}
+    
+    print("SEttings:", json.dumps(settings.dict()))
+    if settings.authentication_method == "APIKey":
+        print("Using APIKey")
+        headers['api-key'] = settings.key
+    else:
+        print("Using RBAC")
+        credential = DefaultAzureCredential()
+        token = credential.get_token("https://search.azure.com/.default").token 
+        headers['Authorization'] = f"Bearer {token}"
     params = {'api-version': settings.api_version}
     #index = settings.index
     k = settings.k
