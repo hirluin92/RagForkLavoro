@@ -30,7 +30,7 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
 
 async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str]) -> list[PromptVersionInfo]:
     settings = get_mssql_settings()
-    logger.info("before a_get_prompt_version_info_by_name")
+    logger.info("before a_get_prompt_info")
     
     try:
         async with aioodbc.create_pool(dsn=settings.connection_string) as pool:
@@ -80,9 +80,9 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                             )
                         )
                     
-                    logger.info("after a_get_prompt_version_info_by_name")
+                    logger.info("after a_get_prompt_info")
                     return prompt_version_infos
 
     except Exception as e:
-        logger.error(f"Error in a_get_prompt_version_info_by_name: {e}")
+        logger.error(f"Error in a_get_prompt_info: {e}")
         return []
