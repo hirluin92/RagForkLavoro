@@ -9,7 +9,9 @@ from models.apis.rag_orchestrator_request import PromptEditorCredential
 from models.configurations.prompt import PromptSettings
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
 from constants import llm as llm_const
-
+from models.apis.prompt_editor_request_body import PromptEditorRequest
+from constants import misc as misc_const
+from dataclasses import asdict
 
 @retry(
     retry=retry_if_http_error(),
@@ -27,8 +29,10 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     endpoint = settings.editor_endpoint + f"/{promptId}"
     if (version != None and version != ""):
         endpoint = settings.editor_endpoint + f"/{promptId}/{version}"
-    headers = {'Content-Type': 'application/json',
-               'x-functions-key': settings.editor_api_key}
+    # headers = {'Content-Type': 'application/json',
+    #            'x-functions-key': settings.editor_api_key}
+    headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
+               misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.get(endpoint,
                            headers=headers) as result:
         result_json = await result.json()
@@ -52,28 +56,26 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     stop=stop_after_attempt(3),
     reraise=True
 )
+# async def a_get_response_from_prompts_api(logger: Logger,
+#                                           session: ClientSession,
+#                                           enrichment_prompt_id: str,
+#                                           completion_prompt_id: str,
+#                                           enrichment_version: Optional[str] = None,
+#                                           completion_version: Optional[str] = None) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody]:
+
 async def a_get_response_from_prompts_api(logger: Logger,
                                           session: ClientSession,
-                                          enrichment_prompt_id: str,
-                                          completion_prompt_id: str,
-                                          enrichment_version: Optional[str] = None,
-                                          completion_version: Optional[str] = None) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody]:
+                                          payloads : list[PromptEditorRequest]) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody]:
 
     settings = PromptSettings()
     endpoint = settings.editor_endpoint
-    payload = [
-        {
-            "id": enrichment_prompt_id,
-            "version": enrichment_version
-        },
-        {
-            "id": completion_prompt_id,
-            "version": completion_version
-        }
-    ]
-    data = json.dumps(payload)
-    headers = {'Content-Type': 'application/json',
-               'x-functions-key': settings.editor_api_key}
+    data = payloads.toJSON()
+
+    track_event_data = [asdict(payload) for payload in payloads]
+    logger.track_event(event_types.prompts_api_result_request, track_event_data)
+    
+    headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
+               misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.post(endpoint,
                             data=data,
                             headers=headers) as result:
@@ -81,16 +83,12 @@ async def a_get_response_from_prompts_api(logger: Logger,
         result_json_string = json.dumps(result_json)
         track_event_data = {
             "request_endpoint": endpoint,
-            "enrichment_prompt_id": enrichment_prompt_id,
-            "enrichment_prompt_version": enrichment_version if enrichment_version else "None",
-            "completion_prompt_id": completion_prompt_id,
-            "completion_prompt_version": completion_version if completion_version else "None",
             "response": result_json_string
         }
-        logger.track_event(event_types.prompts_api_result,
-                           track_event_data)
+        logger.track_event(event_types.prompts_api_result_response, track_event_data)
 
-        return (PromptEditorResponseBody.from_dict(result_json[0]), PromptEditorResponseBody.from_dict(result_json[1]))
+        #return (PromptEditorResponseBody.from_dict(result_json[0]), PromptEditorResponseBody.from_dict(result_json[1]))
+        return result_json
 
 
 async def a_get_enrichment_prompt_data(prompt_editor: list[PromptEditorCredential],
@@ -129,24 +127,49 @@ async def a_get_prompts_data(prompt_editor: list[PromptEditorCredential],
                              logger: Logger,
                              session: ClientSession) -> PromptEditorResponseBody:
     settings = PromptSettings()
+    
+    payload = []
+
     enrichment_prompt_data = next(
         (p for p in prompt_editor if p.type == llm_const.enrichment), None)
-    if (enrichment_prompt_data != None):
-        enrichment_prompt_id = enrichment_prompt_data.id
-        enrichment_version = enrichment_prompt_data.version
-    else:
-        enrichment_prompt_id = settings.enrichment_default_id
-        enrichment_version = settings.enrichment_default_version
-
+    payload.append(PromptEditorRequest(
+            enrichment_prompt_data.id if enrichment_prompt_data != None else settings.enrichment_default_id,
+            enrichment_prompt_data.version if enrichment_prompt_data != None else settings.enrichment_default_version,
+        llm_const.enrichment
+        ))
+    
     completion_prompt_data = next(
         (p for p in prompt_editor if p.type == llm_const.completion), None)
-    if (completion_prompt_data != None):
-        completion_prompt_id = completion_prompt_data.id
-        completion_version = completion_prompt_data.version
-    else:
-        completion_prompt_id = settings.completion_default_id
-        completion_version = settings.completion_default_version
-    return await a_get_response_from_prompts_api(logger, session, enrichment_prompt_id, completion_prompt_id, enrichment_version, completion_version)
+    payload.append(PromptEditorRequest(
+            completion_prompt_data.id if completion_prompt_data != None else settings.completion_default_id,
+            completion_prompt_data.version if completion_prompt_data != None else settings.completion_default_version,
+        llm_const.completion
+        ))
+
+    msd_intent_recognition_prompt_data = next(
+        (p for p in prompt_editor if p.type == llm_const.msd_intent_recognition), None)
+    payload.append(PromptEditorRequest(
+            msd_intent_recognition_prompt_data.id if msd_intent_recognition_prompt_data != None else settings.msd_intent_recognition_default_id,
+            msd_intent_recognition_prompt_data.version if msd_intent_recognition_prompt_data != None else settings.msd_intent_recognition_default_version,
+        llm_const.msd_intent_recognition
+        ))
+    
+    msd_completion_prompt_data = next(
+        (p for p in prompt_editor if p.type == llm_const.msd_completion), None)
+    payload.append(PromptEditorRequest(
+            msd_completion_prompt_data.id if msd_completion_prompt_data != None else settings.msd_completion_default_id,
+            msd_completion_prompt_data.version if msd_completion_prompt_data != None else settings.msd_completion_default_version,
+        llm_const.msd_completion
+        ))
+    
+    listPrompt = await a_get_response_from_prompts_api(logger, session, payload)
+
+    return (
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.enrichment), None), 
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.completion), None),
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_intent_recognition), None),
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_completion), None),
+        )
 
 
 def build_prompt_messages(prompt_data: PromptEditorResponseBody):

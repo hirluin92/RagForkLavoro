@@ -29,7 +29,6 @@ async def a_generate_embedding_from_text(text: str):
                                        check_embedding_ctx_length=False)
     return await embeddings.aembed_query(text)
 
-
 async def a_get_answer_from_context(question: str,
                                     context: List[LlmContextContent],
                                     prompt_data: PromptEditorResponseBody,
@@ -88,7 +87,6 @@ async def a_get_answer_from_context(question: str,
     return RagResponse(result_content.response,
                        result_content.references,
                        prompt_and_model_result.response_metadata.get("finish_reason", "ND"))
-
 
 async def a_get_enriched_query(query: str,
                                topic: str,
@@ -165,6 +163,15 @@ async def a_get_enriched_query(query: str,
 
     return result_content
 
+async def a_get_msd_intent_recognition(question: str,
+                                    context: List[LlmContextContent],
+                                    prompt_data: PromptEditorResponseBody,
+                                    logger: Logger) -> RagResponse:
+    """
+    Prompt for intent recognition from the user's request + context regarding the integration "monitoraggio stato domanda"
+    """
+    
+    settings = get_openai_settings()
 
 def check_prompt_variable(messages, parameters):
     result_string = " | ".join([f"{item[0]} {item[1]}" for item in messages])

@@ -1,0 +1,3 @@
+HTTP_HEADER_CONTENT_TYPE_NAME = "Content-Type"
+HTTP_HEADER_CONTENT_TYPE_JSON_VALUE = "application/json"
+HTTP_HEADER_FUNCTION_KEY_NAME = "x-functions-key"

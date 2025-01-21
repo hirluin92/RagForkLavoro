@@ -4,6 +4,8 @@ mistralai = "MISTRALAI"
 openai = "OPENAI"
 enrichment = "enrichment"
 completion = "completion"
+msd_intent_recognition = "msd_intent_recognition" # msd = monitoraggio stato domanda
+msd_completion = "msd_completion" # msd = monitoraggio stato domanda
 question_variable = "question"
 context_variable = "context"
 topic_variable = "topic"

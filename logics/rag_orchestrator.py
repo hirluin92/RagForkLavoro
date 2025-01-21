@@ -8,6 +8,7 @@ from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
 from services.cqa import a_do_query as cqa_do_query
 from services.prompt_editor import a_get_prompts_data
+from services import openai
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -23,7 +24,13 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     #API get prompts
-    (enrichment_prompt_data, completion_prompt_data) = await a_get_prompts_data(request.prompts, logger, session)
+    (enrichment_prompt_data, 
+    completion_prompt_data, 
+    msd_intent_recognition_prompt_data,
+    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, logger, session)
+
+    if enrichment_prompt_data == None:
+        raise Exception("No enrichment_prompt_data found.")
 
     #Verify llm model id request and prompts model from editor
     if(request.llm_model_id != enrichment_prompt_data.llm_model or 
@@ -59,6 +66,17 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     
+    if msd_intent_recognition_prompt_data == None:
+        raise Exception("No enrichment_prompt_data found.")
+    
+    test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
+    
+    if msd_completion_prompt_data == None:
+        raise Exception("No enrichment_prompt_data found.")
+
+    if completion_prompt_data == None:
+        raise Exception("No enrichment_prompt_data found.")
+
     #Compute completion
     rag_query_result = await language_service.a_do_query(request, completion_prompt_data, logger, session)
     #case: no AI response
