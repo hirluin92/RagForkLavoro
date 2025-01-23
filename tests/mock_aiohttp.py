@@ -12,7 +12,7 @@ class MockClientResponse:
         pass
 
     async def text(self):
-        return json.dumps(self._data)
+        return json.dumps(self._data, ensure_ascii=False).encode('utf-8')
 
     async def __aexit__(self, exc_type, exc, tb):
         pass

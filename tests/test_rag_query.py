@@ -5,7 +5,8 @@ from logics.rag_query import (
     build_question_context_from_search,
     build_response_for_user,
     a_execute_query)
-from models.apis.prompt_editor_response_body import PromptEditorResponseBody
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody, PromptMessage
+from models.apis.rag_query_response_body import RagQueryResponse
 from rag_query import a_query as rag_query_endpoint
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from services.search import a_query
@@ -311,14 +312,22 @@ async def test_query_ok(mocker, monkeypatch):
         "environment":"staging",
         "prompt_editor": []
     }
+
     mock_prompt_data = PromptEditorResponseBody(version = '1',
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= None)
     
-    mock_result = mocker.Mock()
-    mock_result.toJSON.return_value = '{"response": "answer"}'
+    mock_result = RagQueryResponse(
+        response='answer', 
+        references=[1,2], 
+        finishReason='stop', 
+        links=[], 
+        referenceSources=True, 
+        contextIds=[],
+        context=[],
+        bestDocuments=[])
 
     mock_language_service = mocker.AsyncMock()
     mock_language_service.a_do_query.return_value = mock_result

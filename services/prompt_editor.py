@@ -32,7 +32,7 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     async with session.get(endpoint,
                            headers=headers) as result:
         result_json = await result.json()
-        result_json_string = json.dumps(result_json)
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
         track_event_data = {
             "request_endpoint": endpoint,
             "prompt_id": promptId,
@@ -71,14 +71,14 @@ async def a_get_response_from_prompts_api(logger: Logger,
             "version": completion_version
         }
     ]
-    data = json.dumps(payload)
+    data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json',
                'x-functions-key': settings.editor_api_key}
     async with session.post(endpoint,
                             data=data,
                             headers=headers) as result:
         result_json = await result.json()
-        result_json_string = json.dumps(result_json)
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
         track_event_data = {
             "request_endpoint": endpoint,
             "enrichment_prompt_id": enrichment_prompt_id,

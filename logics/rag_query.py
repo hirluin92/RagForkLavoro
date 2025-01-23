@@ -111,7 +111,7 @@ async def a_get_response_from_llm(question: str,
     for index, document in enumerate(context):
         context_to_send_to_append = LlmContextContent(document.chunk, document.reference, document.score) 
         context_to_send.append(context_to_send_to_append)
-        data_to_log["context_" + str(index).zfill(2)] = json.dumps(context_to_send_to_append.toJSON())
+        data_to_log["context_" + str(index).zfill(2)] = json.dumps(context_to_send_to_append.toJSON(), ensure_ascii=False).encode('utf-8')
     logger.track_event(event_types.llm_answer_generation_request_event, data_to_log)
     
     if llm_model_id == llm_const.mistralai:
