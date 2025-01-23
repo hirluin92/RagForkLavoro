@@ -52,7 +52,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                                {
                                    "request-body":  json.dumps(req_body)
                                })
-            async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with aiohttp.ClientSession(raise_for_status=True, trust_env=True) as session:
                 query_response = await a_get_query_response(request, logger, session)
                 json_content = json.dumps(
                     query_response, default=lambda x: x.__dict__)

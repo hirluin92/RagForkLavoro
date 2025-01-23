@@ -1,14 +1,19 @@
 from logging import Logger
-
 from aiohttp import ClientSession
 from constants import event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
+from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
+#from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
+#from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
+#from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
 from services.cqa import a_do_query as cqa_do_query
 from services.prompt_editor import a_get_prompts_data
 from services import openai
+from services import mssql
+from services import domus
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -16,18 +21,34 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     # workaround for content filter:
     request.query = request.query.lower()
 
+    tag = request.tags[0]
+
+    ######################## TEST ########################
+
+    # test = await domus.a_get_form_applications_by_fiscal_code(
+    #         DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.token),
+    #         session,
+    #         logger)
+    
+    ################################################
+
     #CQA service response with original query
-    cqa_result = await cqa_do_query(request.query, request.tags[0], logger)
+    cqa_result = await cqa_do_query(request.query, tag, logger)
     if cqa_result:
         return RagOrchestratorResponse(cqa_result.text_answer,
                                        None,
                                        cqa_result.cqa_data,
                                        None)
+    
+    prompt_type_filter = [llm_const.completion, llm_const.enrichment, llm_const.msd_completion, llm_const.msd_intent_recognition]
+
+    list_prompt_version_info = await mssql.a_get_prompt_info(logger, tag, prompt_type_filter)
+
     #API get prompts
     (enrichment_prompt_data, 
     completion_prompt_data, 
     msd_intent_recognition_prompt_data,
-    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, logger, session)
+    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
 
     if enrichment_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
@@ -54,7 +75,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     #CQA service response with query enriched
     if enriched_query.standalone_question != request.query:
         request.query = enriched_query.standalone_question
-        cqa_result = await cqa_do_query(request.query, request.tags[0], logger)
+        cqa_result = await cqa_do_query(request.query, tag, logger)
         if cqa_result:
             logger.track_event(event_types.cqa_with_enrichment_event, 
                                { 
@@ -69,10 +90,27 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     if msd_intent_recognition_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
     
+    #  verifica riconoscimento entità
     test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
+
+    # se sì, riconoscimento utente autenticato
+    if test:
+        a = 0
+        list_forms = await domus.a_get_form_applications_by_fiscal_code(
+            DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode),
+            session,
+            logger)
+        # se sì, chiamare servizio domus
+        # verificare risposta prompt completion finale con domus
+        if test: # se sì, mostrare all'utente
+            a = 0
+        else: # se no, RAG
+            a = 0
+    else: # se no, RAG
+        a = 0
     
-    if msd_completion_prompt_data == None:
-        raise Exception("No enrichment_prompt_data found.")
+    # if msd_completion_prompt_data == None:
+    #     raise Exception("No enrichment_prompt_data found.")
 
     if completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")

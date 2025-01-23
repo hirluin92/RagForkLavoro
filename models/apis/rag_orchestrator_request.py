@@ -19,4 +19,3 @@ class RagOrchestratorRequest(BaseModel):
     prompts: list[PromptEditorCredential] = []
     token: Optional[str] = None
     userFiscalCode: Optional[str] = None
-

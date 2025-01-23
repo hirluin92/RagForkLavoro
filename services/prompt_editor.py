@@ -48,7 +48,6 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
 
         return PromptEditorResponseBody.from_dict(result_json)
 
-
 @retry(
     retry=retry_if_http_error(),
     wait=wait_for_retry_after_header(
@@ -56,28 +55,47 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     stop=stop_after_attempt(3),
     reraise=True
 )
-# async def a_get_response_from_prompts_api(logger: Logger,
-#                                           session: ClientSession,
-#                                           enrichment_prompt_id: str,
-#                                           completion_prompt_id: str,
-#                                           enrichment_version: Optional[str] = None,
-#                                           completion_version: Optional[str] = None) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody]:
+
+async def a_get_prompts_data(prompt_editor: list[PromptEditorCredential],
+                             list_prompt_version_info: list[PromptEditorCredential],
+                             logger: Logger,
+                             session: ClientSession) -> PromptEditorResponseBody:
+    payload = []
+    prompt_types = [
+        llm_const.enrichment,
+        llm_const.completion,
+        llm_const.msd_intent_recognition,
+        llm_const.msd_completion
+    ]
+
+    for prompt_type in prompt_types:
+        prompt_data = await get_prompt_id_and_version(prompt_editor, list_prompt_version_info, prompt_type)
+        payload.append((prompt_data.id, prompt_data.version, prompt_data.label))
+    
+    listPrompt = await a_get_response_from_prompts_api(logger, session, payload)
+
+    return (
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.enrichment), None), 
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.completion), None),
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_intent_recognition), None),
+        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_completion), None),
+        )
 
 async def a_get_response_from_prompts_api(logger: Logger,
                                           session: ClientSession,
-                                          payloads : list[PromptEditorRequest]) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody]:
+                                          payloads : list[PromptEditorRequest]) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody, PromptEditorResponseBody, PromptEditorResponseBody]:
 
     settings = PromptSettings()
     endpoint = settings.editor_endpoint
-    data = payloads.toJSON()
+    #data = payloads.toJSON()
 
-    track_event_data = [asdict(payload) for payload in payloads]
-    logger.track_event(event_types.prompts_api_result_request, track_event_data)
+    # track_event_data = [asdict(payload) for payload in payloads]
+    # logger.track_event(event_types.prompts_api_result_request, track_event_data)
     
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
                misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.post(endpoint,
-                            data=data,
+                            data=json.dumps(payloads),
                             headers=headers) as result:
         result_json = await result.json()
         result_json_string = json.dumps(result_json)
@@ -123,54 +141,17 @@ async def a_get_completion_prompt_data(prompt_editor: list[PromptEditorCredentia
     return result
 
 
-async def a_get_prompts_data(prompt_editor: list[PromptEditorCredential],
-                             logger: Logger,
-                             session: ClientSession) -> PromptEditorResponseBody:
-    settings = PromptSettings()
-    
-    payload = []
-
-    enrichment_prompt_data = next(
-        (p for p in prompt_editor if p.type == llm_const.enrichment), None)
-    payload.append(PromptEditorRequest(
-            enrichment_prompt_data.id if enrichment_prompt_data != None else settings.enrichment_default_id,
-            enrichment_prompt_data.version if enrichment_prompt_data != None else settings.enrichment_default_version,
-        llm_const.enrichment
-        ))
-    
-    completion_prompt_data = next(
-        (p for p in prompt_editor if p.type == llm_const.completion), None)
-    payload.append(PromptEditorRequest(
-            completion_prompt_data.id if completion_prompt_data != None else settings.completion_default_id,
-            completion_prompt_data.version if completion_prompt_data != None else settings.completion_default_version,
-        llm_const.completion
-        ))
-
-    msd_intent_recognition_prompt_data = next(
-        (p for p in prompt_editor if p.type == llm_const.msd_intent_recognition), None)
-    payload.append(PromptEditorRequest(
-            msd_intent_recognition_prompt_data.id if msd_intent_recognition_prompt_data != None else settings.msd_intent_recognition_default_id,
-            msd_intent_recognition_prompt_data.version if msd_intent_recognition_prompt_data != None else settings.msd_intent_recognition_default_version,
-        llm_const.msd_intent_recognition
-        ))
-    
-    msd_completion_prompt_data = next(
-        (p for p in prompt_editor if p.type == llm_const.msd_completion), None)
-    payload.append(PromptEditorRequest(
-            msd_completion_prompt_data.id if msd_completion_prompt_data != None else settings.msd_completion_default_id,
-            msd_completion_prompt_data.version if msd_completion_prompt_data != None else settings.msd_completion_default_version,
-        llm_const.msd_completion
-        ))
-    
-    listPrompt = await a_get_response_from_prompts_api(logger, session, payload)
-
-    return (
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.enrichment), None), 
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.completion), None),
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_intent_recognition), None),
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_completion), None),
-        )
-
+async def get_prompt_id_and_version(prompt_editor: list[PromptEditorCredential],
+                                    list_prompt_version_info: list[PromptEditorCredential],
+                                    prompt_type: llm_const
+                                    ) -> PromptEditorRequest:
+    prompt_data = next((p for p in prompt_editor if p.type == prompt_type), None)
+    if not prompt_data:
+        prompt_data = next((p for p in list_prompt_version_info if p.type == prompt_type), None)
+        if not prompt_data:
+            raise Exception("No enrichment_prompt_data found.")
+        
+    return PromptEditorRequest(prompt_data.id, prompt_data.version, prompt_type)
 
 def build_prompt_messages(prompt_data: PromptEditorResponseBody):
     messages = prompt_data.prompt

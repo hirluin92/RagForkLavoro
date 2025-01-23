@@ -1,14 +1,16 @@
+from dataclasses import dataclass
 import json
 from constants import llm as llm_const
 
+@dataclass
 class PromptEditorRequest:
     def __init__(self, 
                  id: str,
                  version: str,
-                 type: llm_const):
+                 label: llm_const):
         self.id = id
         self.version = version
-        self.type = type
+        self.label = label
 
     def toJSON(self):
         return json.dumps(self,
