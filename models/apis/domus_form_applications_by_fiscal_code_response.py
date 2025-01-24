@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Optional
-import json
-from typing import Any
+from dataclasses import dataclass, field
+
+from typing import List, Optional, Any
 
 @dataclass
 class StatoDomanda:
@@ -26,21 +26,42 @@ class Domanda:
 
 @dataclass
 class DomusFormApplicationsByFiscalCodeResponse:
-    messaggioErrore: Optional[str]
-    errore: bool
-    numeroPagine: Optional[int]
-    numeroTotaleElementi: Optional[int]
-    listaDomande: List[Domanda]
-
-    # # Funzione per deserializzare il JSON in oggetti dataclass
-    # def from_dict(self, data_class, data):
-    #     if isinstance(data, list):
-    #         return [self.from_dict(data_class, item) for item in data]
-    #     if isinstance(data, dict):
-    #         fieldtypes = {f.name: f.type for f in data_class.__dataclass_fields__.values()}
-    #         return data_class(**{f: self.from_dict(fieldtypes[f], data[f]) for f in data})
-    #     return data
+    listaDomande: List[Domanda]= field(default_factory=list)
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'DomusFormApplicationsByFiscalCodeResponse':
-        return cls(**data)
+        # Funzione di decodifica personalizzata per gestire oggetti annidati
+        def custom_decoder(dct):
+            if 'statoDomanda' in dct:
+                dct['statoDomanda'] = StatoDomanda(**dct['statoDomanda'])
+            return dct
+        
+        # Deserializzare il JSON in un oggetto DomusFormApplicationsByFiscalCodeResponse
+        # data['listaDomande'] = [Domanda(**custom_decoder(domanda)) for domanda in data['listaDomande']]
+        # return cls(**data)
+        
+        # Deserializzare il JSON in un oggetto DomusFormApplicationsByFiscalCodeResponse con solo i parametri di interesse
+        lista_domande = [
+            Domanda(
+                numeroDomus=domanda.get('numeroDomus', ''),
+                progressivoIstanza=domanda.get('progressivoIstanza', 0),
+                nomePrestazione=domanda.get('nomePrestazione', ''),
+                dataPresentazione=domanda.get('dataPresentazione', ''),
+                numeroProtocollo=domanda.get('numeroProtocollo', ''),
+                statoDomanda=custom_decoder(domanda.get('statoDomanda', {})),
+                sede=domanda.get('sede', ''),
+                modalitaVisualizzazione=domanda.get('modalitaVisualizzazione', ''),
+                codiceProdottoDomus=domanda.get('codiceProdottoDomus', ''),
+                codiceProceduraDomus=domanda.get('codiceProceduraDomus', 0),
+                codiceStatoDomandaDomus=domanda.get('codiceStatoDomandaDomus'),
+                dettagliDomanda=domanda.get('dettagliDomanda')
+            )
+            for domanda in data.get('listaDomande', [])
+        ]
+        
+        return cls(listaDomande=lista_domande)
+
+    
+    # @classmethod
+    # def from_dict(cls, data: dict[str, Any]) -> 'DomusFormApplicationsByFiscalCodeResponse':
+    #     return cls(**data)

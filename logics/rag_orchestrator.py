@@ -1,3 +1,4 @@
+import json
 from logging import Logger
 from aiohttp import ClientSession
 from constants import event_types
@@ -5,6 +6,8 @@ from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
+from models.apis.rag_orchestrator_response import MonitorFormApplication
+from models.apis.rag_orchestrator_response import EventMonitorFormApplication
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 #from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
 #from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
@@ -14,6 +17,7 @@ from services.prompt_editor import a_get_prompts_data
 from services import openai
 from services import mssql
 from services import domus
+from utils import string
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -25,10 +29,20 @@ async def a_get_query_response(request: RagOrchestratorRequest,
 
     ######################## TEST ########################
 
+    prompt_type_filter = [llm_const.completion, llm_const.enrichment, llm_const.msd_completion, llm_const.msd_intent_recognition]
+
+    list_prompt_version_info = await mssql.a_get_prompt_info(logger, tag, prompt_type_filter)
+    
+    #API get prompts
+    (enrichment_prompt_data, 
+    completion_prompt_data, 
+    msd_intent_recognition_prompt_data,
+    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
+
     # test = await domus.a_get_form_applications_by_fiscal_code(
-    #         DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.token),
-    #         session,
-    #         logger)
+    #             DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, tag),
+    #             session,
+    #             logger)
     
     ################################################
 
@@ -90,27 +104,49 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     if msd_intent_recognition_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
     
-    #  verifica riconoscimento entità
-    test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
+    # verificare se la prestazione è abilitata al monitoraggio stato domanda
+    if mssql.a_check_status_tag_for_mst(logger, tag, True):
+        #  verifica riconoscimento entità
+        test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
 
-    # se sì, riconoscimento utente autenticato
-    if test:
-        a = 0
-        list_forms = await domus.a_get_form_applications_by_fiscal_code(
-            DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode),
-            session,
-            logger)
-        # se sì, chiamare servizio domus
-        # verificare risposta prompt completion finale con domus
-        if test: # se sì, mostrare all'utente
-            a = 0
-        else: # se no, RAG
-            a = 0
-    else: # se no, RAG
-        a = 0
-    
-    # if msd_completion_prompt_data == None:
-    #     raise Exception("No enrichment_prompt_data found.")
+        # se sì, riconoscimento utente autenticato
+        if test:
+            if string.is_null_or_empty_or_whitespace(request.userFiscalCode) or string.is_null_or_empty_or_whitespace(request.token):
+                # USER NOT AUTHENTICATED
+                return RagOrchestratorResponse("", "", None, "", 
+                                            MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_not_authenticated)))
+            
+            list_forms = await domus.a_get_form_applications_by_fiscal_code(
+                DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, tag),
+                session,
+                logger)
+            
+            if list_forms or list_forms.listaDomande.count == 0:
+                # return NO DOMANDE PRESENTI
+                return RagOrchestratorResponse("", "", None, "", 
+                                            MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_no_form_application)))
+            elif list_forms.listaDomande.count > 1:
+                # return CAROSELLO
+                return RagOrchestratorResponse("", "", None, "", 
+                                            MonitorFormApplication(answer_list=json.dumps([request.to_dict() for request in list_forms.listaDomande]),
+                                                event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_list)))
+            
+            user_form_application = list_forms.listaDomande[0]
+            domus_number = user_form_application.numeroDomus
+            progressivo_istanza = user_form_application.progressivo_istanza
+            
+            # se sì, chiamare servizio domus
+            form_application_details = await domus.a_get_form_application_details(None, session, logger)
+            
+            if msd_completion_prompt_data == None:
+                raise Exception("No enrichment_prompt_data found.")
+        
+            open_ai_result = await openai.a_get_msd_completion()
+            # verificare risposta prompt completion finale con domus
+            if open_ai_result: # se sì, mostrare all'utente
+                return RagOrchestratorResponse("", "", None, "", 
+                                            MonitorFormApplication(answer_text=json.dumps(open_ai_result.answer),
+                                                event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_text)))
 
     if completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")

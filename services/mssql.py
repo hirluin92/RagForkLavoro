@@ -83,3 +83,19 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                 logger.info("after a_get_prompt_info")
                 return prompt_version_infos
 
+async def a_check_status_tag_for_mst(logger: Logger, tag_name: str, status: bool) -> bool:
+    settings = get_mssql_settings()
+    sql_query = f"""
+    SELECT EnableMonitoringQuestion
+    FROM [dbo].[Tags]
+    WHERE [Name] = '{tag_name}' AND [EnableMonitoringQuestion] = {int(status)}
+    """ 
+    logger.info(f"before a_check_status_tag_for_mst")
+    async with aioodbc.create_pool(dsn=settings.connection_string) as pool:
+        async with pool.acquire() as conn:
+            logger.info(f"connection established")
+            async with conn.cursor() as cursor:
+                await cursor.execute(sql_query)
+                records = await cursor.fetchall()
+                print(f'Numero di righe: {len(records)}')
+                return len(records) > 0

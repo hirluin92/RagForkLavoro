@@ -70,7 +70,7 @@ async def a_get_prompts_data(prompt_editor: list[PromptEditorCredential],
 
     for prompt_type in prompt_types:
         prompt_data = await get_prompt_id_and_version(prompt_editor, list_prompt_version_info, prompt_type)
-        payload.append((prompt_data.id, prompt_data.version, prompt_data.label))
+        payload.append(PromptEditorRequest(prompt_data.id, prompt_data.version, prompt_data.label))
     
     listPrompt = await a_get_response_from_prompts_api(logger, session, payload)
 
@@ -92,10 +92,13 @@ async def a_get_response_from_prompts_api(logger: Logger,
     # track_event_data = [asdict(payload) for payload in payloads]
     # logger.track_event(event_types.prompts_api_result_request, track_event_data)
     
+    body = [request.to_dict() for request in payloads]
+    #data2 = json.dumps([request.to_dict() for request in payloads], indent=4)
+    
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
                misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.post(endpoint,
-                            data=json.dumps(payloads),
+                            data=json.dumps(body),
                             headers=headers) as result:
         result_json = await result.json()
         result_json_string = json.dumps(result_json)

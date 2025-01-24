@@ -172,6 +172,16 @@ async def a_get_msd_intent_recognition(question: str,
     """
     
     settings = get_openai_settings()
+    
+async def a_get_msd_completion(question: str,
+                                    context: List[LlmContextContent],
+                                    prompt_data: PromptEditorResponseBody,
+                                    logger: Logger) -> RagResponse:
+    """
+    Prompt for intent recognition from the user's request + context regarding the integration "monitoraggio stato domanda"
+    """
+    
+    settings = get_openai_settings()
 
 def check_prompt_variable(messages, parameters):
     result_string = " | ".join([f"{item[0]} {item[1]}" for item in messages])
