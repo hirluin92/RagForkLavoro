@@ -59,6 +59,10 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     
+    #Flusso Monitoraggio Stato Domanda
+
+
+
     #Compute completion
     rag_query_result = await language_service.a_do_query(request, completion_prompt_data, logger, session)
     #case: no AI response
