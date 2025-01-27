@@ -1,0 +1,1 @@
+MDS_TAGS_MAPPING = "mst_tags_mapping.json"

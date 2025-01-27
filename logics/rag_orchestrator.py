@@ -13,11 +13,11 @@ from models.apis.domus_form_applications_by_fiscal_code_request import DomusForm
 #from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 #from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
 from services.cqa import a_do_query as cqa_do_query
-from services.prompt_editor import a_get_prompts_data
+from services import prompt_editor
 from services import openai
 from services import mssql
 from services import domus
-from utils import string
+from utils import settings, string
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -26,25 +26,6 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     request.query = request.query.lower()
 
     tag = request.tags[0]
-
-    ######################## TEST ########################
-
-    prompt_type_filter = [llm_const.completion, llm_const.enrichment, llm_const.msd_completion, llm_const.msd_intent_recognition]
-
-    list_prompt_version_info = await mssql.a_get_prompt_info(logger, tag, prompt_type_filter)
-    
-    #API get prompts
-    (enrichment_prompt_data, 
-    completion_prompt_data, 
-    msd_intent_recognition_prompt_data,
-    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
-
-    # test = await domus.a_get_form_applications_by_fiscal_code(
-    #             DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, tag),
-    #             session,
-    #             logger)
-    
-    ################################################
 
     #CQA service response with original query
     cqa_result = await cqa_do_query(request.query, tag, logger)
@@ -62,7 +43,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     (enrichment_prompt_data, 
     completion_prompt_data, 
     msd_intent_recognition_prompt_data,
-    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
+    msd_completion_prompt_data) = await prompt_editor.a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
 
     if enrichment_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
@@ -105,7 +86,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
         raise Exception("No enrichment_prompt_data found.")
     
     # verificare se la prestazione è abilitata al monitoraggio stato domanda
-    if mssql.a_check_status_tag_for_mst(logger, tag, True):
+    if await mssql.a_check_status_tag_for_mst(logger, tag, True):
         #  verifica riconoscimento entità
         test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
 
@@ -116,8 +97,10 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                 return RagOrchestratorResponse("", "", None, "", 
                                             MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_not_authenticated)))
             
+            (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, topic=tag, logger=logger)
+            
             list_forms = await domus.a_get_form_applications_by_fiscal_code(
-                DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, tag),
+                DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, domus_form_application_code),
                 session,
                 logger)
             

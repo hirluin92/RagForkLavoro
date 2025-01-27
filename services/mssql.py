@@ -47,8 +47,9 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                     ROW_NUMBER() OVER (
                         PARTITION BY PromptType 
                         ORDER BY CASE 
-                            WHEN TagName IS NOT NULL AND TagName = ? THEN 1 
-                            ELSE 2 
+							WHEN TagName = ? THEN 1 
+							WHEN TagName IS NULL THEN 2 
+							ELSE 3
                         END
                     ) AS RowNum
                 FROM PromptDetails
@@ -63,7 +64,7 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
             """
             
             # Eseguo...
-            await cursor.execute(sql_query, (tag_name,))
+            await cursor.execute(sql_query, (tag_name))
             
             # Itera sui risultati e costruisce la lista da restituire
             prompt_version_infos = []
@@ -80,18 +81,17 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
             return prompt_version_infos
 
 async def a_check_status_tag_for_mst(logger: Logger, tag_name: str, status: bool) -> bool:
-    settings = get_mssql_settings()
     sql_query = f"""
     SELECT EnableMonitoringQuestion
     FROM [dbo].[Tags]
     WHERE [Name] = '{tag_name}' AND [EnableMonitoringQuestion] = {int(status)}
     """ 
     logger.info(f"before a_check_status_tag_for_mst")
-    async with aioodbc.create_pool(dsn=settings.connection_string) as pool:
-        async with pool.acquire() as conn:
+    pool = await DatabaseConnectionPool().get_pool()
+    async with pool.acquire() as conn:
             logger.info(f"connection established")
             async with conn.cursor() as cursor:
                 await cursor.execute(sql_query)
                 records = await cursor.fetchall()
-                print(f'Numero di righe: {len(records)}')
+                logger.info(f"after a_check_status_tag_for_mst")
                 return len(records) > 0

@@ -1,9 +1,10 @@
 import json
+import azure.functions as func
 from logging import Logger
 from typing import Optional, Tuple
 from aiohttp import ClientSession
 from tenacity import retry, stop_after_attempt, wait_exponential
-from constants import event_types
+from constants import event_types, prompt_editor
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import PromptEditorCredential
 from models.configurations.prompt import PromptSettings
@@ -12,6 +13,8 @@ from constants import llm as llm_const
 from models.apis.prompt_editor_request_body import PromptEditorRequest
 from constants import misc as misc_const
 from dataclasses import asdict
+from services.storage import a_get_blob_content_from_container
+
 
 @retry(
     retry=retry_if_http_error(),
@@ -74,29 +77,29 @@ async def a_get_prompts_data(prompt_editor: list[PromptEditorCredential],
     
     listPrompt = await a_get_response_from_prompts_api(logger, session, payload)
 
+    enrichment_data = next((p for p in listPrompt if p["label"] == llm_const.enrichment), None)
+    completion_data =next((p for p in listPrompt if p["label"] == llm_const.completion), None)
+    msd_intent_recognition_data =next((p for p in listPrompt if p["label"] == llm_const.msd_intent_recognition), None)
+    msd_completion_data =next((p for p in listPrompt if p["label"] == llm_const.msd_completion), None)
+
     return (
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.enrichment), None), 
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.completion), None),
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_intent_recognition), None),
-        PromptEditorResponseBody.from_dict(next(p for p in listPrompt if p.type == llm_const.msd_completion), None),
+        PromptEditorResponseBody.from_dict(enrichment_data), 
+        PromptEditorResponseBody.from_dict(completion_data),
+        PromptEditorResponseBody.from_dict(msd_intent_recognition_data),
+        PromptEditorResponseBody.from_dict(msd_completion_data)
         )
 
 async def a_get_response_from_prompts_api(logger: Logger,
                                           session: ClientSession,
-                                          payloads : list[PromptEditorRequest]) -> Tuple[PromptEditorResponseBody, PromptEditorResponseBody, PromptEditorResponseBody, PromptEditorResponseBody]:
-
+                                          payloads : list[PromptEditorRequest]) -> list[PromptEditorResponseBody]:
     settings = PromptSettings()
     endpoint = settings.editor_endpoint
     #data = payloads.toJSON()
 
-    # track_event_data = [asdict(payload) for payload in payloads]
-    # logger.track_event(event_types.prompts_api_result_request, track_event_data)
-    
     body = [request.to_dict() for request in payloads]
-    #data2 = json.dumps([request.to_dict() for request in payloads], indent=4)
     
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
-               misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
+            misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.post(endpoint,
                             data=json.dumps(body),
                             headers=headers) as result:
@@ -108,9 +111,7 @@ async def a_get_response_from_prompts_api(logger: Logger,
         }
         logger.track_event(event_types.prompts_api_result_response, track_event_data)
 
-        #return (PromptEditorResponseBody.from_dict(result_json[0]), PromptEditorResponseBody.from_dict(result_json[1]))
-        return result_json
-
+    return result_json
 
 async def a_get_enrichment_prompt_data(prompt_editor: list[PromptEditorCredential],
                                        logger: Logger,
@@ -160,3 +161,12 @@ def build_prompt_messages(prompt_data: PromptEditorResponseBody):
     messages = prompt_data.prompt
     tuple_messages = [(m.role, m.content) for m in messages]
     return tuple_messages
+
+async def a_get_form_application_name_by_tag(container_name: str, tag:str, logger: Logger)-> tuple:
+    file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MDS_TAGS_MAPPING)
+    maps = json.loads(file_content)
+    for elemento in maps:
+        if elemento["tag"] == tag:
+            return elemento["domus_form_application_code"], elemento["domus_form_application_name"]
+    
+    raise Exception(f"No domus form application name or code found for '{tag}'.")

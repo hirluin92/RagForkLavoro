@@ -85,6 +85,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             return func.HttpResponse(json.dumps(problem.to_dict()),
                                     status_code=e.error_code,
                                     mimetype="application/problem+json")
+            
         except Exception as e:
             logger.exception(e.args[0])
             problem = Problem(500, "Internal server error",

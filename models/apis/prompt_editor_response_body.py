@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 class PromptMessage:
     def __init__(self, 
@@ -26,12 +27,14 @@ class PromptEditorResponseBody:
                  llm_model: str,
                  prompt: list[PromptMessage], 
                  parameters: list[str],
-                 model_parameters: ModelParameters):
+                 model_parameters: ModelParameters,
+                 label: Optional[str] = None):
         self.version = version
         self.llm_model = llm_model
         self.prompt = prompt
         self.parameters = parameters
-        self.model_parameters = model_parameters   
+        self.model_parameters = model_parameters
+        self.label = label   
 
     def toJSON(self):
         return json.dumps(self,
@@ -40,6 +43,9 @@ class PromptEditorResponseBody:
 
     
     def from_dict(data: dict) -> 'PromptEditorResponseBody':
+        if data == None:
+            return
+        
         model_params = ModelParameters(**data['model_parameters'])      
         prompts = [PromptMessage(**mex) for mex in data['prompt']]
         return PromptEditorResponseBody(
@@ -47,7 +53,8 @@ class PromptEditorResponseBody:
             llm_model=data['llm_model'],
             prompt=prompts,
             parameters=data['parameters'],
-            model_parameters=model_params
+            model_parameters=model_params,
+            label=data['label']
         )
 
 
