@@ -18,4 +18,5 @@ class RagOrchestratorRequest(BaseModel):
     environment: str = "production"
     prompts: list[PromptEditorCredential] = []
     token: Optional[str] = None
-    userFiscalCode: Optional[str] = None
+    user_fiscal_code: Optional[str] = None
+    text_by_card: Optional[str] = None

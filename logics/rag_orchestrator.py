@@ -24,6 +24,8 @@ async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
             session: ClientSession) -> RagOrchestratorResponse:
     # workaround for content filter:
+    
+    request.query = f"{request.query}. {request.text_by_card}." if request.text_by_card != None and len(request.text_by_card) > 0 else request.query
     request.query = request.query.lower()
 
     tag = request.tags[0]
@@ -83,62 +85,64 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     
-    #Flusso Monitoraggio Stato Domanda
-    intent_prompt_data = PromptEditorResponseBody()
-    domus_prompt_data = PromptEditorResponseBody()
-    practice_detail_json = ""
-    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
-    domus_result = await language_service.a_get_domus_answer(request, practice_detail_json, domus_prompt_data, logger)
-
+    ###### INIZIO - Flusso Monitoraggio Stato Domanda ######
     
-    if msd_intent_recognition_prompt_data == None:
-        raise Exception("No enrichment_prompt_data found.")
+    # intent_prompt_data = PromptEditorResponseBody()
+    # domus_prompt_data = PromptEditorResponseBody()
+    # practice_detail_json = ""
+    # intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+    # domus_result = await language_service.a_get_domus_answer(request, practice_detail_json, domus_prompt_data, logger)
     
-    # verificare se la prestazione è abilitata al monitoraggio stato domanda
-    if await mssql.a_check_status_tag_for_mst(logger, tag, True):
-        #  verifica riconoscimento entità
-        test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
+    # if msd_intent_recognition_prompt_data == None:
+    #     raise Exception("No enrichment_prompt_data found.")
+    
+    # # verificare se la prestazione è abilitata al monitoraggio stato domanda
+    # if await mssql.a_check_status_tag_for_mst(logger, tag, True):
+    #     #  verifica riconoscimento entità
+    #     test = await openai.a_get_msd_intent_recognition(request.query, logger=logger)
 
-        # se sì, riconoscimento utente autenticato
-        if test:
-            if string.is_null_or_empty_or_whitespace(request.userFiscalCode) or string.is_null_or_empty_or_whitespace(request.token):
-                # USER NOT AUTHENTICATED
-                return RagOrchestratorResponse("", "", None, "", 
-                                            MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_not_authenticated)))
+    #     # se sì, riconoscimento utente autenticato
+    #     if test:
+    #         if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
+    #             # USER NOT AUTHENTICATED
+    #             return RagOrchestratorResponse("", "", None, "", 
+    #                                         MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_not_authenticated)))
             
-            (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, topic=tag, logger=logger)
+    #         (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, topic=tag, logger=logger)
             
-            list_forms = await domus.a_get_form_applications_by_fiscal_code(
-                DomusFormApplicationsByFiscalCodeRequest(request.userFiscalCode, request.userFiscalCode, domus_form_application_code),
-                session,
-                logger)
+    #         list_forms = await domus.a_get_form_applications_by_fiscal_code(
+    #             DomusFormApplicationsByFiscalCodeRequest(request.user_fiscal_code, request.user_fiscal_code, domus_form_application_code),
+    #             session,
+    #             logger)
             
-            if list_forms or list_forms.listaDomande.count == 0:
-                # return NO DOMANDE PRESENTI
-                return RagOrchestratorResponse("", "", None, "", 
-                                            MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_no_form_application)))
-            elif list_forms.listaDomande.count > 1:
-                # return CAROSELLO
-                return RagOrchestratorResponse("", "", None, "", 
-                                            MonitorFormApplication(answer_list=json.dumps([request.to_dict() for request in list_forms.listaDomande]),
-                                                event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_list)))
+    #         if list_forms or list_forms.listaDomande.count == 0:
+    #             # return NO DOMANDE PRESENTI
+    #             return RagOrchestratorResponse("", "", None, "", 
+    #                                         MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_no_form_application)))
+    #         elif list_forms.listaDomande.count > 1:
+    #             # return CAROSELLO
+    #             return RagOrchestratorResponse("", "", None, "", 
+    #                                         MonitorFormApplication(answer_list=json.dumps([request.to_dict() for request in list_forms.listaDomande]),
+    #                                             event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_list)))
             
-            user_form_application = list_forms.listaDomande[0]
-            domus_number = user_form_application.numeroDomus
-            progressivo_istanza = user_form_application.progressivo_istanza
+    #         user_form_application = list_forms.listaDomande[0]
+    #         domus_number = user_form_application.numeroDomus
+    #         progressivo_istanza = user_form_application.progressivo_istanza
             
-            # se sì, chiamare servizio domus
-            form_application_details = await domus.a_get_form_application_details(None, session, logger)
+    #         # se sì, chiamare servizio domus
+    #         form_application_details = await domus.a_get_form_application_details(None, session, logger)
             
-            if msd_completion_prompt_data == None:
-                raise Exception("No enrichment_prompt_data found.")
+    #         if msd_completion_prompt_data == None:
+    #             raise Exception("No enrichment_prompt_data found.")
         
-            open_ai_result = await openai.a_get_msd_completion()
-            # verificare risposta prompt completion finale con domus
-            if open_ai_result: # se sì, mostrare all'utente
-                return RagOrchestratorResponse("", "", None, "", 
-                                            MonitorFormApplication(answer_text=json.dumps(open_ai_result.answer),
-                                                event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_text)))
+    #         open_ai_result = await openai.a_get_msd_completion()
+    #         # verificare risposta prompt completion finale con domus
+    #         if open_ai_result: # se sì, mostrare all'utente
+    #             return RagOrchestratorResponse("", "", None, "", 
+    #                                         MonitorFormApplication(answer_text=json.dumps(open_ai_result.answer),
+    #                                             event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_text)))
+
+    ###### FINE - Flusso Monitoraggio Stato Domanda ######
 
     if completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
@@ -154,4 +158,4 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     return RagOrchestratorResponse(rag_query_result.response,
                                    enriched_query.standalone_question,
                                    None,
-                                   rag_query_result)
+                                   rag_query_result)    
