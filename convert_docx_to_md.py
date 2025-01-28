@@ -28,7 +28,7 @@ async def convert_docx_to_md(req: func.HttpRequest, context: func.Context) -> fu
             req_body = req.get_json()
             logger.track_event(event_types.convert_docx_to_md,
                                {
-                                   "request-body":  json.dumps(req_body)
+                                   "request-body":  json.dumps(req_body, ensure_ascii=False).encode('utf-8')
                                })
             request_body = ConvertDocxToMdRequestBody.model_validate(req_body)
             result = await a_extract_hyperlink_from_files(request_body, context)

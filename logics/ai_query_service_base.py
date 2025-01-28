@@ -7,6 +7,8 @@ from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import Interaction, RagOrchestratorRequest
 from models.apis.rag_query_response_body import RagQueryResponse
+from models.services.openai_domus_response import DomusAnswerResponse
+from models.services.openai_intent_response import ClassifyIntentResponse
 from services.mssql import a_get_tags_by_tag_names
 
 class AiQueryServiceBase(ABC):
@@ -25,6 +27,19 @@ class AiQueryServiceBase(ABC):
     async def a_do_query_enrichment(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
                             logger: Logger)-> EnrichmentQueryResponse:
         pass 
+
+    @abstractmethod
+    async def a_compute_classify_intent_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
+                            logger: Logger) -> ClassifyIntentResponse:
+        pass
+
+    @abstractmethod
+    async def a_get_domus_answer(self, request: RagOrchestratorRequest, practice_detail: str, prompt_data: PromptEditorResponseBody,
+                            logger: Logger) -> DomusAnswerResponse:
+        pass
+
+
+
 
     async def get_topic_from_tags(self, logger: Logger, tags: list[str])->str:
         topic = ""

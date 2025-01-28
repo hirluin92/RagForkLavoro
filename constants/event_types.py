@@ -27,3 +27,7 @@ domus_api_form_applications_by_fiscal_code_response = "DomusAPIFormAppByFiscalCo
 domus_api_form_application_details_request = "DomusAPIFormAppDetailsRequest"
 domus_api_form_application_details__response = "DomusAPIFormAppDetailsResponse"
 get_prompts_result = "PromptRetrievalAPIResult"
+llm_intent_classification_request = "LLMIntentClassificationRequest"
+llm_intent_classification_response = "LLMIntentClassificationResponse"
+llm_domus_answer_generation_request = "LLMDomusAnswerRequest"
+llm_domus_answer_generation_response = "LLMDomusAnswerResponse"

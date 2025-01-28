@@ -70,7 +70,7 @@ async def a_query(session: ClientSession,
         payload["semanticConfiguration"] = settings.index_semantic_configuration
         payload["captions"] = "extractive"
 
-    data = json.dumps(payload)
+    data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     endpoint: str = settings.endpoint + "/indexes/" + index + "/docs/search"
     async with session.post(endpoint,
                                 data=data, 
@@ -78,12 +78,12 @@ async def a_query(session: ClientSession,
                                 params=params) as result:
         result_json = await result.json()
         track_event_data = {
-            "requestPayload": json.dumps(payload)
+            "requestPayload": json.dumps(payload, ensure_ascii=False).encode('utf-8')
         }
         values_to_log: list = result_json.get('value', [])
         index=0
         for value in values_to_log:
-            track_event_data["resultDocument_" + str(index).zfill(2)] = json.dumps(value)
+            track_event_data["resultDocument_" + str(index).zfill(2)] = json.dumps(value, ensure_ascii=False).encode('utf-8')
             index+=1
         logger.track_event(event_types.search_results_received_event,
                         track_event_data)

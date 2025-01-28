@@ -42,7 +42,7 @@ async def a_do_query(query: str, topic:str, logger: Logger)-> CQAResponse:
 
         logger.track_event(event_types.cqa_answer_event,
                        {"question": query,
-                        "answer": json.dumps(output.serialize())})
+                        "answer": json.dumps(output.serialize(), ensure_ascii=False).encode('utf-8')})
         
         # Verifico se la risposta è accettabile
         if not output.answers[0] or output.answers[0].answer == str(settings.default_noresult_answer):

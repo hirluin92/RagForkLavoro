@@ -39,7 +39,7 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     async with session.get(endpoint,
                            headers=headers) as result:
         result_json = await result.json()
-        result_json_string = json.dumps(result_json)
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
         track_event_data = {
             "request_endpoint": endpoint,
             "prompt_id": promptId,
@@ -101,10 +101,10 @@ async def a_get_response_from_prompts_api(logger: Logger,
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
             misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
     async with session.post(endpoint,
-                            data=json.dumps(body),
+                            data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
                             headers=headers) as result:
         result_json = await result.json()
-        result_json_string = json.dumps(result_json)
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
         track_event_data = {
             "request_endpoint": endpoint,
             "response": result_json_string

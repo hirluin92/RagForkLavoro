@@ -9,6 +9,8 @@ from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 import constants.llm as llm_const
 from models.apis.rag_query_response_body import RagQueryResponse
 
+from models.services.openai_domus_response import DomusAnswerResponse
+from models.services.openai_intent_response import ClassifyIntentResponse
 from services.mistralai import a_get_enriched_query
 
 class AiQueryServiceMistralAI(AiQueryServiceBase):
@@ -39,3 +41,11 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
                                              logger,
                                              session)
         return query_result
+    
+    async def a_compute_classify_intent_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
+                            logger: Logger) -> ClassifyIntentResponse:
+        return None
+    
+    async def a_get_domus_answer(self, request: RagOrchestratorRequest, practice_detail: str, prompt_data: PromptEditorResponseBody,
+                            logger: Logger) -> DomusAnswerResponse:
+        return None

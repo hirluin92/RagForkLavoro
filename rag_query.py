@@ -43,7 +43,7 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
             request = RagOrchestratorRequest.model_validate(req_body)
             logger.track_event(event_types.rag_query_requested_event,
                             {
-                               "request-body": json.dumps(req_body)
+                               "request-body": json.dumps(req_body, ensure_ascii=False).encode('utf-8')
                             })
     
             #Get AI service (OpenAI or Mistral)
@@ -56,12 +56,15 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
                 #Verify llm model id request and prompts model from editor
                 if(request.llm_model_id != completion_prompt_data.llm_model):
                     raise requests.exceptions.HTTPError("Bad Request: The request llm model id  is different from prompt editor llm model.", response=None)
-                result = await language_service.a_do_query(request, completion_prompt_data, logger, session)
+                result = await language_service.a_do_query(request, completion_prompt_data, logger, session)               
+                json_content = json.dumps(
+                    result, ensure_ascii=False, default=lambda x: x.__dict__).encode('utf-8')               
                 logger.track_event(event_types.rag_query_performed_event,
                                 {
-                                "response-body": result.toJSON()
+                                "response-body": json_content
                                 })
-                return func.HttpResponse(result.toJSON(),
+                
+                return func.HttpResponse(json_content,
                                         mimetype="application/json")
         except ValidationError as e:
             problem = Problem(422, "Bad Request", e.errors(), None, None)

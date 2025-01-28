@@ -50,12 +50,12 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             # del req_body["interactions"]
             logger.track_event(event_types.rag_orchestrator_requested_event,
                                {
-                                   "request-body":  json.dumps(req_body)
+                                   "request-body":  json.dumps(req_body, ensure_ascii=False).encode('utf-8')
                                })
             async with aiohttp.ClientSession(raise_for_status=True, trust_env=True) as session:
                 query_response = await a_get_query_response(request, logger, session)
                 json_content = json.dumps(
-                    query_response, default=lambda x: x.__dict__)
+                    query_response, ensure_ascii=False, default=lambda x: x.__dict__).encode('utf-8')
 
                 # Log statistici
                 # response_source = ""

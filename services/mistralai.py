@@ -32,7 +32,7 @@ async def a_get_answer_from_context(question: str,
     chain = prompt | llm.with_retry() 
 
     data_to_log = {
-            "prompt_messages": json.dumps(prompt_messages),
+            "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
             "endpoint": settings.endpoint,
             "deployment": settings.model,
             "temperature": prompt_data.model_parameters.temperature, 
@@ -48,7 +48,7 @@ async def a_get_answer_from_context(question: str,
         llm_const.context_variable: context})
     
     logger.track_event(event_types.llm_answer_generation_response_event,
-                           {"answer": prompt_and_model_result.json()})
+                           {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
 
     result_content_parser = PydanticOutputParser(pydantic_object=RagResponseOutputParser)
     result_content = await result_content_parser.ainvoke(prompt_and_model_result)
@@ -83,7 +83,7 @@ async def a_get_enriched_query(query: str,
     chain = prompt | llm.with_retry() 
 
     data_to_log = {
-        "prompt_messages": json.dumps(prompt_messages),
+        "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
         "chat_history": chat_history,
         "question": query,
         "topic": topic
@@ -98,7 +98,7 @@ async def a_get_enriched_query(query: str,
     })
     
     logger.track_event(event_types.llm_enrichment_response_event,
-                           {"enrichedQuery": prompt_and_model_result.json()})
+                           {"enrichedQuery": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
     
     result_content_parser = PydanticOutputParser(pydantic_object=EnrichmentQueryResponse)
     result_content = await result_content_parser.ainvoke(prompt_and_model_result)
