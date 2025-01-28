@@ -4,6 +4,7 @@ from aiohttp import ClientSession
 from constants import event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
 from services.cqa import a_do_query as cqa_do_query
@@ -60,7 +61,11 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        None)
     
     #Flusso Monitoraggio Stato Domanda
-
+    intent_prompt_data = PromptEditorResponseBody()
+    domus_prompt_data = PromptEditorResponseBody()
+    practice_detail_json = ""
+    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+    domus_result = await language_service.a_get_domus_answer(request, practice_detail_json, domus_prompt_data, logger)
 
 
     #Compute completion
