@@ -163,7 +163,7 @@ def build_prompt_messages(prompt_data: PromptEditorResponseBody):
     return tuple_messages
 
 async def a_get_form_application_name_by_tag(container_name: str, tag:str, logger: Logger)-> tuple:
-    file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MDS_TAGS_MAPPING)
+    file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MSD_TAGS_MAPPING)
     maps = json.loads(file_content)
     for elemento in maps:
         if elemento["tag"] == tag:

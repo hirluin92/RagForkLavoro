@@ -1,1 +1,1 @@
-MDS_TAGS_MAPPING = "mst_tags_mapping.json"
+MSD_TAGS_MAPPING = "msd_tags_mapping.json"

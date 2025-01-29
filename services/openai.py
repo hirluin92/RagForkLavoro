@@ -179,6 +179,7 @@ async def a_get_intent_from_enriched_query(question: str,
     if not check:
         err_code = llm_const.status_code_var_intent
         mex = "Invalid classify intent prompt parameters"
+        
         custom_err = CustomPromptParameterError(mex, err_code)
         raise custom_err
     

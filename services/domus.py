@@ -37,7 +37,7 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
         result_obj = DomusFormApplicationsByFiscalCodeResponse.from_dict(result_json)
         
         # AGGIUNGERE FILTER BY TAGS
-        filtered_result = [domanda for domanda in result_obj.listaDomande if domanda.nomePrestazione == "PENSIONE DI VECCHIAIA"]
+        filtered_result = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
         #filtered_domande = [domand
         # a for domanda in result_obj.listaDomande if domanda['nomePrestazione'] == "PENSIONE DI VECCHIAIA"]
 
