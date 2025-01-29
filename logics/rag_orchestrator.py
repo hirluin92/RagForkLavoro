@@ -4,6 +4,7 @@ from aiohttp import ClientSession
 from constants import event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
+from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
@@ -14,12 +15,13 @@ from models.apis.domus_form_applications_by_fiscal_code_request import DomusForm
 #from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
 #from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 #from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
+from models.configurations.prompt import PromptSettings
 from services.cqa import a_do_query as cqa_do_query
 from services import prompt_editor
 from services import openai
 from services import mssql
 from services import domus
-from utils import settings, string
+from utils import string
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -86,88 +88,17 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                        cqa_result.cqa_data,
                                        None)
     
-    ###### INIZIO - Flusso Monitoraggio Stato Domanda ######
+    result = await check_msd_question(request, 
+                    tag,
+                    msd_completion_prompt_data, 
+                    msd_intent_recognition_prompt_data, 
+                    completion_prompt_data, 
+                    language_service,
+                    enriched_query,
+                    logger,
+                    session)
     
-    if msd_intent_recognition_prompt_data == None:
-        raise Exception("No msd_intent_recognition_prompt_data found.")
-    
-    practice_detail_json = ""
-    
-    # If the tag application is disabled for "monitoring the application status" integration, the rag will directly response
-    if await mssql.a_check_status_tag_for_mst(logger, tag, False):
-        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session)
-        
-    #  verifica riconoscimento entità
-    intent_prompt_data = PromptEditorResponseBody(msd_intent_recognition_prompt_data.version, msd_intent_recognition_prompt_data.llm_model,
-                                                msd_intent_recognition_prompt_data.prompt, msd_intent_recognition_prompt_data.parameters, 
-                                                msd_intent_recognition_prompt_data.model_parameters)
-    
-    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
-    
-    # If the correct intent has not been recognized from the user's sentence, the rag will directly response
-    if intent_result.intent.lower() == 'altro':
-        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session)
-        
-    # riconoscimento utente autenticato
-    if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
-        # USER NOT AUTHENTICATED
-        return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(event_type=EventMonitorFormApplication(EventMonitorFormApplication.user_not_authenticated)))
-    
-    (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, topic=tag, logger=logger)
-    
-    list_forms = await domus.a_get_form_applications_by_fiscal_code(
-        DomusFormApplicationsByFiscalCodeRequest(request.user_fiscal_code, request.token, domus_form_application_code, intent_result.stato_domanda[0]),
-        session,
-        logger)
-    
-    if list_forms or list_forms.listaDomande.count == 0:
-        # return NO DOMANDE PRESENTI
-        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session)
-    
-    if list_forms.listaDomande.count > 1:
-        # return CAROSELLO
-        return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(answer_list=json.dumps([request.to_dict() for request in list_forms.listaDomande]),
-                                        event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_list)))
-    
-    user_form_application = list_forms.listaDomande[0]
-    domus_number = user_form_application.numeroDomus
-    progressivo_istanza = user_form_application.progressivo_istanza
-    
-    # se sì, chiamare servizio domus
-    form_application_details = await domus.a_get_form_application_details(None, session, logger)
-    
-    if msd_completion_prompt_data == None:
-        raise Exception("No enrichment_prompt_data found.")
-
-    domus_prompt_data = PromptEditorResponseBody(msd_completion_prompt_data.version, msd_completion_prompt_data.llm_model,
-                                    msd_completion_prompt_data.prompt, msd_completion_prompt_data.parameters, 
-                                    msd_completion_prompt_data.model_parameters)
-    domus_result = await language_service.a_get_domus_answer(request, practice_detail_json, domus_prompt_data, logger)
-
-    # verificare risposta prompt completion finale con domus
-    if domus_result: # se sì, mostrare all'utente
-        return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(answer_text=json.dumps(domus_result.answer),
-                                        event_type=EventMonitorFormApplication(EventMonitorFormApplication.show_answer_text)))
-
-    ###### FINE - Flusso Monitoraggio Stato Domanda ######
-
-    await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session)
-
-    # #Compute completion
-    # rag_query_result = await language_service.a_do_query(request, completion_prompt_data, logger, session)
-    # #case: no AI response
-    # if len(rag_query_result.finish_reason) == 0:
-    #     return RagOrchestratorResponse(rag_query_result.response,
-    #                                enriched_query.standalone_question,
-    #                                None,
-    #                                None)
-    # return RagOrchestratorResponse(rag_query_result.response,
-    #                                enriched_query.standalone_question,
-    #                                None,
-    #                                rag_query_result)   
+    return result if result is not None else await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
     
 async def a_do_query(request: RagOrchestratorRequest, 
                      completion_prompt_data: PromptEditorResponseBody, 
@@ -186,3 +117,85 @@ async def a_do_query(request: RagOrchestratorRequest,
                                 enriched_query.standalone_question,
                                 None,
                                 None if len(rag_query_result.finish_reason) == 0 else rag_query_result)
+    
+    
+async def check_msd_question(request: RagOrchestratorRequest, 
+                    tag: string,
+                    msd_completion_prompt_data: PromptEditorResponseBody, 
+                    msd_intent_recognition_prompt_data: PromptEditorResponseBody, 
+                    completion_prompt_data: PromptEditorResponseBody, 
+                    language_service: AiQueryServiceFactory,
+                    enriched_query: EnrichmentQueryResponse,
+                    logger: Logger,
+                    session: ClientSession) -> RagOrchestratorResponse:
+
+    if msd_intent_recognition_prompt_data == None:
+        raise Exception("No msd_intent_recognition_prompt_data found.")
+        
+    # If the tag application is disabled for "monitoring the application status" integration, the rag will directly response
+    if await mssql.a_check_status_tag_for_mst(logger, tag, False):
+        return None
+        
+    #  Intent recognition
+    intent_prompt_data = PromptEditorResponseBody(msd_intent_recognition_prompt_data.version, msd_intent_recognition_prompt_data.llm_model,
+                                                msd_intent_recognition_prompt_data.prompt, msd_intent_recognition_prompt_data.parameters, 
+                                                msd_intent_recognition_prompt_data.model_parameters)
+    
+    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+    
+    # If the correct intent has not been recognized from the user's sentence, the rag will directly response
+    if intent_result.intent.lower() == 'altro':
+        return None
+        
+    # riconoscimento utente autenticato
+    if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
+        # User not authenticated
+        return RagOrchestratorResponse("", "", None, "", 
+                                    MonitorFormApplication(event_type=EventMonitorFormApplication.user_not_authenticated))
+    
+    settings = PromptSettings()
+    (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, tag, logger)
+    
+    list_forms = await domus.a_get_form_applications_by_fiscal_code(
+        DomusFormApplicationsByFiscalCodeRequest(request.user_fiscal_code, request.token, domus_form_application_code, intent_result.stato_domanda[0] if intent_result.stato_domanda else None),
+        session,
+        logger)
+        
+    if list_forms is None or list_forms.listaDomande is None or len(list_forms.listaDomande) == 0:
+        # There are no form application submitted by the client with the specified tag, the rag will directly response
+        return None
+
+    # TEST
+    # one_form = list_forms.listaDomande[0]
+    
+    # list_forms.listaDomande = []
+    # list_forms.listaDomande.append(one_form)
+    
+    if len(list_forms.listaDomande) > 1:
+        # return carousel
+        return RagOrchestratorResponse("", "", None, "", 
+                                    MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
+                                        event_type=EventMonitorFormApplication.show_answer_list))
+    
+    user_form_application = list_forms.listaDomande[0]
+    domus_number = user_form_application.numeroDomus
+    progressivo_istanza = user_form_application.progressivoIstanza
+    
+    form_application_details = await domus.a_get_form_application_details(DomusFormApplicationDetailsRequest(domus_number, progressivo_istanza, request.token), 
+                                                                          session, logger)
+    
+    if msd_completion_prompt_data == None:
+        raise Exception("No enrichment_prompt_data found.")
+
+    domus_prompt_data = PromptEditorResponseBody(msd_completion_prompt_data.version, msd_completion_prompt_data.llm_model,
+                                    msd_completion_prompt_data.prompt, msd_completion_prompt_data.parameters, 
+                                    msd_completion_prompt_data.model_parameters)
+    
+    domus_result = await language_service.a_get_domus_answer(request, form_application_details, domus_prompt_data, logger)
+
+    if domus_result and domus_result.has_answer and domus_result.answer: # se sì, mostrare all'utente
+        return RagOrchestratorResponse("", "", None, "", 
+                                    MonitorFormApplication(answer_text=domus_result.answer,
+                                        event_type=EventMonitorFormApplication.show_answer_text))
+    
+    return None

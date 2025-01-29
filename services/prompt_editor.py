@@ -166,7 +166,7 @@ async def a_get_form_application_name_by_tag(container_name: str, tag:str, logge
     file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MSD_TAGS_MAPPING)
     maps = json.loads(file_content)
     for elemento in maps:
-        if elemento["tag"] == tag:
+        if elemento["tag"] == tag.lower():
             return elemento["domus_form_application_code"], elemento["domus_form_application_name"]
     
     raise Exception(f"No domus form application name or code found for '{tag}'.")

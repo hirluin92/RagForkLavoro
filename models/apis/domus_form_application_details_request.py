@@ -1,10 +1,10 @@
 class DomusFormApplicationDetailsRequest:
     def __init__(self, 
-                 numero_domus: str,
+                 domus_number: str,
                  progressivo_istanza: int,
                  token: str,
                  language: str = "it"):
-        self.numero_domus = numero_domus
+        self.domus_number = domus_number
         self.token = token
         self.language = language
         self.progressivo_istanza = progressivo_istanza

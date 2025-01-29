@@ -5,7 +5,7 @@ from constants import event_types
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 from models.apis.domus_form_application_details_response import DomusFormAapplicationDetailsResponse
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
-from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
+from models.apis.domus_form_applications_by_fiscal_code_response import Domanda, DomusFormApplicationsByFiscalCodeResponse, StatoDomanda
 from constants import misc as misc_const
 from models.configurations.domus import DomusApiSettings
 import ssl
@@ -16,7 +16,7 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                                           logger: Logger) -> DomusFormApplicationsByFiscalCodeResponse:
 
     settings = DomusApiSettings()
-    endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_applications_by_fiscal_code_url}?codiceFiscale={request.user_fiscal_code}&lingua={request.language}"
+    endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_applications_by_fiscal_code_url}?codiceFiscale={request.user_fiscal_code}&lingua={request.language.upper()}"
 
     # Crea un contesto SSL personalizzato
     ssl_context = ssl.create_default_context()
@@ -34,14 +34,12 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                             ssl = ssl_context) as result:
         
         result_json = await result.json()
-        result_obj = DomusFormApplicationsByFiscalCodeResponse.from_dict(result_json)
+        result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
         
         # AGGIUNGERE FILTER BY TAGS
-        filtered_result = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
-        #filtered_domande = [domand
-        # a for domanda in result_obj.listaDomande if domanda['nomePrestazione'] == "PENSIONE DI VECCHIAIA"]
-
-        result_obj.listaDomande = filtered_result
+        # result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code 
+        #                     and (domanda.statoDomanda.stato is None or domanda.statoDomanda.stato == request.form_application_status)]
+        result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
 
         logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_response, {"response": "OK"})
         return result_obj
@@ -51,9 +49,9 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
                                           logger: Logger,) -> DomusFormAapplicationDetailsResponse:
 
     settings = DomusApiSettings()
-    endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}/?numeroDomus={request.numero_domus}&lingua={request.language}&progressivoIstanza={request.progressivo_istanza}"
+    endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}?numeroDomus={request.domus_number}&lingua={request.language.upper()}&progressivoIstanza={request.progressivo_istanza}"
 
-# Crea un contesto SSL personalizzato
+    # Crea un contesto SSL personalizzato
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
@@ -68,7 +66,7 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
                             headers=headers,
                             ssl = ssl_context) as result:
         result_json = await result.json()
-        result_obj = DomusFormAapplicationDetailsResponse.from_dict(result_json)
+        result_obj = DomusFormAapplicationDetailsResponse.model_validate(result_json)
         
         logger.track_event(event_types.domus_api_form_application_details__response, {"response": "OK"})
-        return result_json
+        return result_obj

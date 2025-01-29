@@ -10,6 +10,7 @@ class PromptSettings(BaseSettings):
     enrichment_default_version: Optional[str] = None
     completion_default_id: str
     completion_default_version: Optional[str] = None
+    config_container: str = None
     # msd_intent_recognition_default_id: str
     # msd_intent_recognition_default_version: Optional[str] = None
     # msd_completion_default_id: str

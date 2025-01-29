@@ -14,7 +14,7 @@ class EventMonitorFormApplication:
     show_answer_list = "ShowAnswerList"
 
 class MonitorFormApplication:
-    def __init__(self, answer_text = None, answer_list = None, event_type = None):
+    def __init__(self, answer_text = None, answer_list = None, event_type: EventMonitorFormApplication = None):
         self.answer_text = answer_text
         self.answer_list = answer_list
         self.event_type = event_type
