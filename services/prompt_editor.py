@@ -85,7 +85,8 @@ async def a_get_response_from_prompts_api(logger: Logger,
             "enrichment_prompt_version": enrichment_version if enrichment_version else "None",
             "completion_prompt_id": completion_prompt_id,
             "completion_prompt_version": completion_version if completion_version else "None",
-            "response": result_json_string
+            "response": result_json_string,
+            "request": data
         }
         logger.track_event(event_types.prompts_api_result,
                            track_event_data)
