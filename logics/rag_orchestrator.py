@@ -94,6 +94,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                     msd_intent_recognition_prompt_data, 
                     language_service,
                     enriched_query,
+                    completion_prompt_data,
                     logger,
                     session)
     
@@ -124,6 +125,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     msd_intent_recognition_prompt_data: PromptEditorResponseBody, 
                     language_service: AiQueryServiceFactory,
                     enriched_query: EnrichmentQueryResponse,
+                    completion_prompt_data: PromptEditorResponseBody,
                     logger: Logger,
                     session: ClientSession) -> RagOrchestratorResponse:
 
@@ -191,9 +193,12 @@ async def check_msd_question(request: RagOrchestratorRequest,
     
     domus_result = await language_service.a_get_domus_answer(request, form_application_details, domus_prompt_data, logger)
 
-    if domus_result and domus_result.has_answer and domus_result.answer: # se sì, mostrare all'utente
-        return RagOrchestratorResponse("", "", None, "", 
+    if domus_result:
+        if domus_result.has_answer and domus_result.answer:
+            return RagOrchestratorResponse("", "", None, "", 
                                     MonitorFormApplication(answer_text=domus_result.answer,
                                         event_type=EventMonitorFormApplication.show_answer_text))
+            
+        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
     
     return None
