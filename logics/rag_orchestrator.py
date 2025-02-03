@@ -5,6 +5,7 @@ from constants import event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
+from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
 from models.apis.enrichment_query_response import EnrichmentQueryResponse
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
@@ -12,9 +13,7 @@ from models.apis.rag_orchestrator_response import RagOrchestratorResponse
 from models.apis.rag_orchestrator_response import MonitorFormApplication
 from models.apis.rag_orchestrator_response import EventMonitorFormApplication
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
-#from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
-#from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
-#from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
+from models.configurations.clog import CLog
 from models.configurations.prompt import PromptSettings
 from services.cqa import a_do_query as cqa_do_query
 from services import prompt_editor
@@ -98,14 +97,18 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                     logger,
                     session)
     
-    return result if result is not None else await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
+    if result is None or result.clog is not None:
+        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=result.clog or None) 
+    
+    return result
     
 async def a_do_query(request: RagOrchestratorRequest, 
                      completion_prompt_data: PromptEditorResponseBody, 
                      language_service: AiQueryServiceFactory,
                      enriched_query: EnrichmentQueryResponse,
                      logger: Logger,
-                     session: ClientSession) -> RagOrchestratorResponse:
+                     session: ClientSession,
+                     clog : CLog = None) -> RagOrchestratorResponse:
     
     if completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
@@ -116,8 +119,8 @@ async def a_do_query(request: RagOrchestratorRequest,
     return RagOrchestratorResponse(rag_query_result.response,
                                 enriched_query.standalone_question,
                                 None,
-                                None if len(rag_query_result.finish_reason) == 0 else rag_query_result)
-    
+                                None if len(rag_query_result.finish_reason) == 0 else rag_query_result,
+                                clog = clog or None)
     
 async def check_msd_question(request: RagOrchestratorRequest, 
                     tag: string,
@@ -156,34 +159,47 @@ async def check_msd_question(request: RagOrchestratorRequest,
     settings = PromptSettings()
     (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, tag, logger)
     
-    list_forms = await domus.a_get_form_applications_by_fiscal_code(
-        DomusFormApplicationsByFiscalCodeRequest(request.user_fiscal_code, request.token, domus_form_application_code, intent_result.stato_domanda[0] if intent_result.stato_domanda else None),
-        session,
-        logger)
+    try:
+        list_forms = await domus.a_get_form_applications_by_fiscal_code(
+            DomusFormApplicationsByFiscalCodeRequest(request.user_fiscal_code, request.token, domus_form_application_code, intent_result.stato_domanda[0] if intent_result.stato_domanda else None),
+            session,
+            logger)
         
-    if list_forms is None or list_forms.listaDomande is None or len(list_forms.listaDomande) == 0:
-        # There are no form application submitted by the client with the specified tag, the rag will directly response
+    except Exception as e:
+        return RagOrchestratorResponse("", "", None, "", None, CLog(ret_code=e.code, err_desc=e.message))
+        
+    if list_forms is None:
         return None
-
-    # TEST
-    # one_form = list_forms.listaDomande[0]
     
-    # list_forms.listaDomande = []
-    # list_forms.listaDomande.append(one_form)
+    if list_forms.listaDomande is None or len(list_forms.listaDomande) == 0:
+        # There are no form application submitted by the client with the specified tag, so the rag will directly response
+        return RagOrchestratorResponse("", "", None, "", None, CLog(ret_code=0, err_desc=list_forms.messaggioErrore))  # 200 - NO DATI
+        #return None # CLog(ret_code=list_forms.errore, err_desc=list_forms.messaggioErrore) # 200 - NO DATI
     
     if len(list_forms.listaDomande) > 1:
-        # return carousel
-        return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
-                                        event_type=EventMonitorFormApplication.show_answer_list))
-    
-    user_form_application = list_forms.listaDomande[0]
-    domus_number = user_form_application.numeroDomus
-    progressivo_istanza = user_form_application.progressivoIstanza
-    
-    form_application_details = await domus.a_get_form_application_details(DomusFormApplicationDetailsRequest(domus_number, progressivo_istanza, request.token), 
-                                                                          session, logger)
-    
+        if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
+            # return carousel
+            return RagOrchestratorResponse("", "", None, "", 
+                                        MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
+                                            event_type=EventMonitorFormApplication.show_answer_list),
+                                        CLog(ret_code=0))
+        else: 
+            user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == str(intent_result.numero_domus[0])), None)
+    else:   
+        user_form_application = list_forms.listaDomande[0]
+        
+    if not user_form_application:
+        # There are no form application submitted by the client with the specified "numero domus", so the rag will directly response
+        return None
+        
+    try:
+        form_application_details = await domus.a_get_form_application_details(
+        DomusFormApplicationDetailsRequest(user_form_application.numeroDomus, user_form_application.progressivoIstanza, request.token), 
+        session, logger)
+        
+    except Exception as e:
+        return RagOrchestratorResponse("", "", None, "", None, CLog(ret_code=e.code, err_desc=e.message))
+        
     if msd_completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
 
@@ -191,14 +207,20 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                     msd_completion_prompt_data.prompt, msd_completion_prompt_data.parameters, 
                                     msd_completion_prompt_data.model_parameters)
     
+    if form_application_details is None:
+        return None
+    
+    if form_application_details.errore:
+        return RagOrchestratorResponse("", "", None, "", None, CLog(ret_code=0, err_desc=list_forms.messaggioErrore))  # quale retcode metto?
+    
     domus_result = await language_service.a_get_domus_answer(request, form_application_details, domus_prompt_data, logger)
 
     if domus_result:
         if domus_result.has_answer and domus_result.answer:
             return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(answer_text=domus_result.answer,
-                                        event_type=EventMonitorFormApplication.show_answer_text))
-            
-        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
+                                    MonitorFormApplication(answer_text=domus_result.answer,event_type=EventMonitorFormApplication.show_answer_text),
+                                    CLog(ret_code=0))
+        
+    return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=CLog(ret_code=0)) 
     
     return None

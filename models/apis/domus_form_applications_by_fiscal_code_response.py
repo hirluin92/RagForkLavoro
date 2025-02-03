@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from models.configurations.clog import CLog
 
 class StatoDomanda(BaseModel):
     dataAggiornamento: Optional[str]
@@ -26,3 +27,4 @@ class DomusFormApplicationsByFiscalCodeResponse(BaseModel):
     numeroPagine: Optional[int]
     numeroTotaleElementi: Optional[int]
     listaDomande: Optional[list[Domanda]]
+    clog: Optional[CLog]

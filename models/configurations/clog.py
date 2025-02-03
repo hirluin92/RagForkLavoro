@@ -1,6 +1,5 @@
-class CLog:
-    def __init__(self, ret_code, err_desc = None):
-        self.ret_code = ret_code
-        self.err_desc = err_desc
+from pydantic import BaseModel
+
+class CLog(BaseModel):
     ret_code: int
-    err_desc: str
+    err_desc: str = None
