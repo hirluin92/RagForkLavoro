@@ -7,7 +7,8 @@ from models.apis.prompt_editor_response_body import ModelParameters, PromptEdito
 from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
 from services.mistralai import (a_get_answer_from_context as mistralai_get_answer_from_context, 
-                                a_get_enriched_query as mistralai_get_enriched_query
+                                a_get_enriched_query as mistralai_get_enriched_query,
+                                a_get_answer_from_domus, a_get_intent_from_enriched_query
                                 )
 
 @pytest.fixture
@@ -45,7 +46,10 @@ async def test_mistralai_get_answer_from_context(mocker,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= mock_model_parameters) 
-
+    mocker.patch(
+        "services.mistralai.check_prompt_variable",
+        return_value=True
+    )
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_mistralai.complete.return_value = True
     mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
@@ -75,7 +79,10 @@ async def test_do_query_enrichment(mocker,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= mock_model_parameters)
-    
+    mocker.patch(
+        "services.mistralai.check_prompt_variable",
+        return_value=True
+    )   
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_mistralai.complete.return_value = True
     mock_azure_chat_mistralai.content =  '{\n\t"standalone_question": "standalone question",\n    "end_conversation": false\n}'
@@ -92,4 +99,81 @@ async def test_do_query_enrichment(mocker,
     # Assert
     assert result.standalone_question == "standalone question"
 
+@pytest.mark.asyncio 
+async def test_get_intent_from_enriched_query(mocker,
+                             monkeypatch,
+                             mock_chat_prompt_template,
+                             mock_azure_chat_mistralai):
+        # Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = MockLogger()
+    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters)
+    # Sample question and context
+    question = "Quale è lo stato della mia pratica"
+
+    mocker.patch(
+        "services.mistralai.check_prompt_variable",
+        return_value=True
+    )
+
+    mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
+    mock_azure_chat_mistralai.complete.return_value = True
+    mock_azure_chat_mistralai.content = ""
+
+    mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
+    mock_parser.intent = "Lista"
+    mock_parser.return_value = mock_parser
     
+    # Act
+    result = await a_get_intent_from_enriched_query(question,                       
+                                            mock_prompt_data,
+                                            mock_logger)
+
+    # Assert
+    assert result.intent == "Lista"
+
+@pytest.mark.asyncio
+async def test_get_answer_from_domus(mocker,
+                                monkeypatch,
+                                mock_chat_prompt_template,
+                                mock_azure_chat_mistralai):
+        # Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = MockLogger()
+    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters)
+    # Sample question and context
+    question = "Quale è lo stato della mia pratica"
+    practice_detail = "json practice detail"
+
+    mocker.patch(
+        "services.mistralai.check_prompt_variable",
+        return_value=True
+    )
+
+    mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
+    mock_azure_chat_mistralai.complete.return_value = True
+    mock_azure_chat_mistralai.content = ""
+
+    mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
+    mock_parser.answer = "Sospesa"
+    mock_parser.return_value = mock_parser
+
+    # Act
+    result = await a_get_answer_from_domus(question,
+                                            practice_detail,
+                                            mock_prompt_data,
+                                            mock_logger)
+
+    # Assert
+    assert result.answer == "Sospesa"
+
