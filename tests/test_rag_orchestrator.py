@@ -3,6 +3,7 @@ import os
 import azure.functions as func
 import pytest
 import logics
+from tests.mock_env import set_mock_env
 from logics.ai_query_service_base import AiQueryServiceBase
 from logics.ai_query_service_factory import AiQueryServiceFactory
 import logics.rag_orchestrator
@@ -14,7 +15,6 @@ from models.services.cqa_response import CQAResponse
 from services.ai_query_service_mistralai import AiQueryServiceMistralAI
 from services.ai_query_service_openai import AiQueryServiceOpenAI
 from services.logging import Logger
-from tests.mock_env import set_mock_env
 from tests.mock_logging import set_mock_logger_builder
 from rag_orchestrator import a_rag_orchestrator as ragOrchestrator_endpoint
 from services.cqa import a_do_query

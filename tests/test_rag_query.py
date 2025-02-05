@@ -1,6 +1,7 @@
 import json
 import azure.functions as func
 import pytest
+from tests.mock_env import set_mock_env
 from logics.rag_query import (
     build_question_context_from_search,
     build_response_for_user,
@@ -11,7 +12,6 @@ from rag_query import a_query as rag_query_endpoint
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from services.search import a_query
 from tests.mock_aiohttp import MockClientResponse, MockClientSession
-from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 import constants.llm as llm_const
 from utils.settings import (
