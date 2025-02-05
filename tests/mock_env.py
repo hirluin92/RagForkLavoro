@@ -52,4 +52,4 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv('PROMPT_ENRICHMENT_DEFAULT_VERSION', '1.0.0')
     monkeypatch.setenv('PROMPT_COMPLETION_DEFAULT_ID', 'default-completion-id')
     monkeypatch.setenv('PROMPT_COMPLETION_DEFAULT_VERSION', '1.0.0')
-
+    monkeypatch.setenv('PROMPT_CONFIG_CONTAINER', 'CONTAINER')

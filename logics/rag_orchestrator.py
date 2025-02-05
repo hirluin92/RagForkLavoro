@@ -16,9 +16,9 @@ from models.apis.domus_form_applications_by_fiscal_code_request import DomusForm
 from models.configurations.clog import CLog
 from models.configurations.prompt import PromptSettings
 from services.cqa import a_do_query as cqa_do_query
-from services import prompt_editor
+from services.prompt_editor import a_get_prompts_data, a_get_form_application_name_by_tag
 from services import openai
-from services import mssql
+from services.mssql import a_get_prompt_info, a_check_status_tag_for_mst
 from services import domus
 from utils import string
 
@@ -42,13 +42,13 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     
     prompt_type_filter = [llm_const.completion, llm_const.enrichment, llm_const.msd_completion, llm_const.msd_intent_recognition]
 
-    list_prompt_version_info = await mssql.a_get_prompt_info(logger, tag, prompt_type_filter)
+    list_prompt_version_info = await a_get_prompt_info(logger, tag, prompt_type_filter)
 
     #API get prompts
     (enrichment_prompt_data, 
     completion_prompt_data, 
     msd_intent_recognition_prompt_data,
-    msd_completion_prompt_data) = await prompt_editor.a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
+    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
 
     if enrichment_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
@@ -98,7 +98,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                     session)
     
     if result is None or result.clog is not None:
-        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=result.clog or None) 
+        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=getattr(result, 'clog', None)) 
     
     return result
     
@@ -136,7 +136,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         raise Exception("No msd_intent_recognition_prompt_data found.")
         
     # If the tag application is disabled for "monitoring the application status" integration, the rag will directly response
-    if await mssql.a_check_status_tag_for_mst(logger, tag, False):
+    if await a_check_status_tag_for_mst(logger, tag, False):
         return None
         
     #  Intent recognition
@@ -157,7 +157,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                     MonitorFormApplication(event_type=EventMonitorFormApplication.user_not_authenticated))
     
     settings = PromptSettings()
-    (domus_form_application_code, domus_form_application_name) = await prompt_editor.a_get_form_application_name_by_tag(settings.config_container, tag, logger)
+    (domus_form_application_code, domus_form_application_name) = await a_get_form_application_name_by_tag(settings.config_container, tag, logger)
     
     try:
         list_forms = await domus.a_get_form_applications_by_fiscal_code(

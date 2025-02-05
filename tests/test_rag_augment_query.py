@@ -31,8 +31,7 @@ async def test_query_no_body(mocker, monkeypatch):
     assert response.status_code == 500
    
 @pytest.mark.asyncio
-async def test_query_missing_body_value_question(mocker,
-                                           monkeypatch):
+async def test_query_missing_body_value_question(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
 

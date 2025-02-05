@@ -21,10 +21,11 @@ from utils.settings import (
     get_storage_settings
     )
 
-def test_build_response_for_user_rag_response_empty(mocker):
+def test_build_response_for_user_rag_response_empty(mocker, monkeypatch):
     # Arrange
     mock_rag_response = mocker.Mock()
     mock_rag_response.references = []
+    set_mock_env(monkeypatch)
 
     # Act
     result = build_response_for_user(mock_rag_response, [])
@@ -33,7 +34,7 @@ def test_build_response_for_user_rag_response_empty(mocker):
     assert len(result) > 0
     assert result[0] == "Mi dispiace, non riesco a fornire una risposta alla tua domanda."
 
-def test_build_response_for_user_rag_response_invalid_references(mocker):
+def test_build_response_for_user_rag_response_invalid_references(mocker, monkeypatch):
     # Arrange
     mock_rag_response = mocker.Mock()
     mock_rag_response.references = [1]
@@ -43,13 +44,13 @@ def test_build_response_for_user_rag_response_invalid_references(mocker):
 
     mock_context = mocker.Mock()
     mock_context = [mock_reference]
-
+    set_mock_env(monkeypatch)
     # Act
     # Assert
     with pytest.raises(Exception):
         build_response_for_user(mock_rag_response, mock_context)
 
-def test_build_response_for_user_ok(mocker):
+def test_build_response_for_user_ok(mocker, monkeypatch):
     # Arrange
     mock_rag_response = mocker.Mock()
     mock_rag_response.response = "LLM response"
@@ -61,7 +62,7 @@ def test_build_response_for_user_ok(mocker):
 
     mock_context = mocker.Mock()
     mock_context = [mock_reference]
-
+    set_mock_env(monkeypatch)
     # Act
     result = build_response_for_user(mock_rag_response, mock_context)
 
@@ -70,18 +71,19 @@ def test_build_response_for_user_ok(mocker):
     assert "LLM response" in result[0]
     assert "reference.txt" in result[1]
 
-def test_build_question_context_from_search_empty_context(mocker):
+def test_build_question_context_from_search_empty_context(mocker, monkeypatch):
     # Arrange
     mock_search_result = mocker.Mock()
     mock_search_result.value = []
-
+    set_mock_env(monkeypatch)
+    
     # Act
     result = build_question_context_from_search(mock_search_result)
 
     # Assert
     assert len(result) == 0
 
-def test_build_question_context_from_search_ok(mocker):
+def test_build_question_context_from_search_ok(mocker, monkeypatch):
     # Arrange
     mock_search_result_value = mocker.Mock()
     mock_search_result_value.chunk_id = "chunk_id"
@@ -93,7 +95,8 @@ def test_build_question_context_from_search_ok(mocker):
 
     mock_search_result = mocker.Mock()
     mock_search_result.value = [mock_search_result_value]
-
+    set_mock_env(monkeypatch)
+    
     # Act
     result = build_question_context_from_search(mock_search_result)
 
@@ -126,8 +129,7 @@ async def test_get_from_index_ko(mocker, monkeypatch):
         await a_query(json.loads(request), [1], mock_logger)
 
 @pytest.mark.asyncio
-async def test_get_from_index_ok(mocker,
-                                 monkeypatch):
+async def test_get_from_index_ok(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
 
@@ -167,7 +169,7 @@ async def test_get_from_index_ok(mocker,
     assert len(result.value) == 1
 
 @pytest.mark.asyncio
-async def test_execute_query_empty_search_results_ok(mocker):
+async def test_execute_query_empty_search_results_ok(mocker, monkeypatch):
     # Arrange
     mock_logger = MockLogger()
     mock_prompt_data = PromptEditorResponseBody(version = '1',
@@ -183,6 +185,7 @@ async def test_execute_query_empty_search_results_ok(mocker):
 
     mock_search_result = mocker.Mock()
     mock_search_result.value = []
+    set_mock_env(monkeypatch)
     
     mocker.patch(
         "logics.rag_query.query_azure_ai_search",
@@ -239,7 +242,7 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
         return_value=mock_rag_response
     )
     mock_session = mocker.Mock()
-
+    set_mock_env(monkeypatch)
     request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.mistralai, tags= ["auu"], environment="staging")
 
     # Act
@@ -412,13 +415,15 @@ async def test_query_no_body(mocker, monkeypatch):
     assert response.status_code == 500
 
 @pytest.mark.asyncio
-async def test_query_missing_environment_variables(mocker):
+async def test_query_missing_environment_variables(mocker, monkeypatch):
+    
     # Arrange
     get_mistralai_settings.cache_clear()
     get_openai_settings.cache_clear()
     get_search_settings.cache_clear()
     get_storage_settings.cache_clear()
-
+    
+    set_mock_env(monkeypatch)
     set_mock_logger_builder(mocker)
 
     req_body = {
@@ -436,11 +441,10 @@ async def test_query_missing_environment_variables(mocker):
     func_call = rag_query_endpoint.build().get_user_function()
     response = await func_call(req, mock_trace_context)
     # Assert
-    assert response.status_code == 500
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
-async def test_query_missing_body_value_question(mocker,
-                                           monkeypatch):
+async def test_query_missing_body_value_question(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
 

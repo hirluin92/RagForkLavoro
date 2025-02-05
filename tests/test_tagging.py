@@ -22,12 +22,14 @@ def mock_blob_client(mocker):
     return mock_blob_client
 
 @pytest.mark.asyncio
-async def test_a_get_blobName_and_metadata_for_tagging_ok(mocker, mock_blob_client):
+async def test_a_get_blobName_and_metadata_for_tagging_ok(mocker, mock_blob_client, monkeypatch):
     # Arrange
     mocker.patch(
         "azure.storage.blob.BlobClient.from_blob_url",
          return_value=mock_blob_client
     )
+    
+    set_mock_env(monkeypatch)
 
     # Act
     result = await a_get_blobName_and_metadata_for_tagging("fileUrl")
@@ -38,7 +40,7 @@ async def test_a_get_blobName_and_metadata_for_tagging_ok(mocker, mock_blob_clie
     assert result[1].get("key") == "value"
 
 @pytest.mark.asyncio
-async def test_a_create_metadata_on_blob_ok(mocker, mock_blob_client):
+async def test_a_create_metadata_on_blob_ok(mocker, mock_blob_client, monkeypatch):
     # Arrange
     mock_url_source = "https://genaipltstdev.blob.core.windows.net/data1/auu/assegno_unico_prova.txt?token"
     mock_metadataKey = "sezione"
@@ -54,17 +56,19 @@ async def test_a_create_metadata_on_blob_ok(mocker, mock_blob_client):
     ) 
     mock_service_client.get_blob_client.return_value = mock_blob_client
     mock_blob_client.set_blob_metadata.return_value = mock_metadata_properties
+    set_mock_env(monkeypatch)
 
     # Act
     result = await a_create_metadata_on_blob(mock_url_source, mock_metadataKey, mock_metadataValue)
 
 @pytest.mark.asyncio
-async def test_a_get_all_blob_metadata_ok(mocker, mock_blob_client):
+async def test_a_get_all_blob_metadata_ok(mocker, mock_blob_client, monkeypatch):
     # Arrange
     mocker.patch(
         "azure.storage.blob.BlobClient.from_blob_url",
          return_value=mock_blob_client
     )
+    set_mock_env(monkeypatch)
 
     # Act
     result = await a_get_all_blob_metadata("fileUrl")
@@ -117,12 +121,13 @@ async def test_a_get_or_create_console_file_id_with_fileID_created(mocker):
     assert uuid.UUID(result)
 
 @pytest.mark.asyncio
-async def test_a_get_folders_name_ok(mocker, mock_blob_client):
+async def test_a_get_folders_name_ok(mocker, mock_blob_client, monkeypatch):
     # Arrange
     mocker.patch(
         "azure.storage.blob.BlobClient.from_blob_url",
          return_value=mock_blob_client
     )
+    set_mock_env(monkeypatch)
 
     # Act
     result = await a_get_folders_name("fileUrl")
