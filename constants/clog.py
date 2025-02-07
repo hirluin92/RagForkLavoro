@@ -1,0 +1,6 @@
+DOMUSAPIOKLISTEMPTY = "La ricerca non ha prodotto risultati"
+DOMUSAPIOKERRORPARAMISTRUE = "Errore di accesso ai dati"
+DOMUSAPIERROR = "Errore di accesso ai dati"
+DOMUSAPIOKDETAILEMPTY = "La ricerca non ha prodotto risultati"
+DOMUSAPIDETAILERRORPARAMISTRUE = "Errore di accesso ai dati"
+DOMUSAPIDETAILERROR = "Errore di accesso ai dati"
