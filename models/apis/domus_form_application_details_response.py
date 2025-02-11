@@ -37,7 +37,7 @@ class DomusFormAapplicationDetailsResponse(BaseModel):
     siglaPatronato: Optional[str]
     modalitaPresentazione: Optional[str]
     listaStati: Optional[List[ListaStati]]
-    adempimenti: Optional[List[str]]
+    adempimenti: Optional[List[Adempimenti]]
     codiceFiscaleTitolareDomanda: Optional[str]
     scopeStatoCorrente: Optional[str]
     codiceProdottoDomus: Optional[str]

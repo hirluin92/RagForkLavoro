@@ -211,7 +211,8 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
                                                     llm_model='MISTRALAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    label= None)
     
     mock_embedding = mocker.Mock()
     mocker.patch(
@@ -261,7 +262,8 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    label= None)
     
     mock_embedding = mocker.Mock()
     mocker.patch(

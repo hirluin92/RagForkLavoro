@@ -20,7 +20,7 @@ class AiQueryServiceBase(ABC):
     
     @abstractmethod
     async def a_do_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
-                 logger: Logger,session: ClientSession) -> RagQueryResponse:
+                 logger: Logger,session: ClientSession, domusData: str = None) -> RagQueryResponse:
         pass
     
     @abstractmethod

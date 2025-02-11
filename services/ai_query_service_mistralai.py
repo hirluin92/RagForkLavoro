@@ -35,11 +35,13 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
     async def a_do_query(self, request: RagOrchestratorRequest,
                          prompt_data: PromptEditorResponseBody,
                         logger: Logger,
-                        session: ClientSession)-> RagQueryResponse:
+                        session: ClientSession, 
+                        domusData: str = None)-> RagQueryResponse:
         query_result = await a_execute_query(request,
                                              prompt_data,
                                              logger,
-                                             session)
+                                             session,
+                                             domusData=domusData)
         return query_result
     
     async def a_compute_classify_intent_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
