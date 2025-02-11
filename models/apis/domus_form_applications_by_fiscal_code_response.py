@@ -27,4 +27,4 @@ class DomusFormApplicationsByFiscalCodeResponse(BaseModel):
     numeroPagine: Optional[int]
     numeroTotaleElementi: Optional[int]
     listaDomande: Optional[list[Domanda]]
-    clog: Optional[CLog]
+    clog: Optional[CLog] = None
