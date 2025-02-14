@@ -59,3 +59,5 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("DOMUS_RELATIVE_URL", "mock/relative")
     monkeypatch.setenv("DOMUS_GET_FORM_APPLICATIONS_BY_FISCAL_CODE_URL", "mock/getByFiscalCode")
     monkeypatch.setenv("DOMUS_GET_FORM_APPLICATION_DETAILS_URL", "mock/getDetails")
+    monkeypatch.setenv("DOMUS_IBM_CLIENT_ID", "mock_client_id")
+    monkeypatch.setenv("DOMUS_IBM_CLIENT_SECRET", "mock_client_secret")
