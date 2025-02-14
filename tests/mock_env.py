@@ -61,3 +61,8 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("DOMUS_GET_FORM_APPLICATION_DETAILS_URL", "mock/getDetails")
     monkeypatch.setenv("DOMUS_IBM_CLIENT_ID", "mock_client_id")
     monkeypatch.setenv("DOMUS_IBM_CLIENT_SECRET", "mock_client_secret")
+    monkeypatch.setenv("PROMPT_EDITOR_API_KEY", "mocked_api_key")
+    monkeypatch.setenv("PROMPT_EDITOR_ENDPOINT", "https://mocked.endpoint")
+    monkeypatch.setenv("PROMPT_ENRICHMENT_DEFAULT_ID", "default_enrichment_id")
+    monkeypatch.setenv("PROMPT_COMPLETION_DEFAULT_ID", "default_completion_id")
+    monkeypatch.setenv("PROMPT_CONFIG_CONTAINER", "mocked_container")
