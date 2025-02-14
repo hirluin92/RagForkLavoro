@@ -4,7 +4,6 @@ import azure.functions as func
 import pytest
 import logics
 from tests.mock_env import set_mock_env
-from tests.mock_aioodbc import MockPool
 from logics.ai_query_service_base import AiQueryServiceBase
 from logics.ai_query_service_factory import AiQueryServiceFactory
 import logics.rag_orchestrator

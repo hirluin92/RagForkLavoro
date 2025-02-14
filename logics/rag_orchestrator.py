@@ -1,6 +1,5 @@
 import json
-from logging import Logger
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 from constants import clog, event_types
 from constants import llm as llm_const
 from logics.ai_query_service_factory import AiQueryServiceFactory
@@ -16,6 +15,7 @@ from models.apis.domus_form_applications_by_fiscal_code_request import DomusForm
 from models.configurations.clog import CLog, CLogParams, CLogSettings
 from models.configurations.prompt import PromptSettings
 from services.cqa import a_do_query as cqa_do_query
+from services.logging import Logger
 from services.prompt_editor import a_get_prompts_data, a_get_form_application_name_by_tag
 from services import openai
 from services.mssql import a_get_prompt_info, a_check_status_tag_for_mst
@@ -172,9 +172,16 @@ async def check_msd_question(request: RagOrchestratorRequest,
             session,
             logger)
         
-    except Exception as e:
+    except ClientResponseError as e:
+        logger.exception(e)
         return RagOrchestratorResponse("", "", None, "", None, 
                                        CLog(ret_code=e.code, err_desc=clog.DOMUSAPIERROR, id_event=clog_settings.msd_elencodomande, 
+                                            params=CLogParams(cf=request.user_fiscal_code, prestazione=tag)))
+    
+    except Exception as e:
+        logger.exception(e)
+        return RagOrchestratorResponse("", "", None, "", None, 
+                                       CLog(ret_code=500, err_desc=clog.DOMUSAPIERROR, id_event=clog_settings.msd_elencodomande, 
                                             params=CLogParams(cf=request.user_fiscal_code, prestazione=tag)))
         
     if list_forms and (list_forms.errore or not string.is_null_or_empty_or_whitespace(list_forms.messaggioErrore)):
@@ -186,6 +193,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         return RagOrchestratorResponse("", "", None, "", None, 
                                        CLog(ret_code=200, err_desc=clog.DOMUSAPIOKLISTEMPTY, id_event=clog_settings.msd_elencodomande, 
                                             params=CLogParams(cf=request.user_fiscal_code, prestazione=tag)))
+        
         
     if len(list_forms.listaDomande) > 1:
         if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
@@ -207,10 +215,19 @@ async def check_msd_question(request: RagOrchestratorRequest,
         form_application_details = await domus.a_get_form_application_details(
         DomusFormApplicationDetailsRequest(user_form_application.numeroDomus, user_form_application.progressivoIstanza, request.token), 
         session, logger)
-        
-    except Exception as e:
+    
+    except ClientResponseError as e:
+        logger.exception(e)
         return RagOrchestratorResponse("", "", None, "", None, 
-                                        clog=CLog(ret_code=e.code, err_desc=clog.DOMUSAPIDETAILERROR, id_event=clog_settings.msd_dettagliodomande, 
+                                       CLog(ret_code=e.code, err_desc=clog.DOMUSAPIDETAILERROR, id_event=clog_settings.msd_dettagliodomande, 
+                                            params=CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
+                                                                num_domus=user_form_application.numeroDomus, 
+                                                                num_prot=user_form_application.numeroProtocollo)))
+
+    except Exception as e:
+        logger.exception(e)
+        return RagOrchestratorResponse("", "", None, "", None, 
+                                        clog=CLog(ret_code=500, err_desc=clog.DOMUSAPIDETAILERROR, id_event=clog_settings.msd_dettagliodomande, 
                                                 params=CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                                                   num_domus=user_form_application.numeroDomus, 
                                                                   num_prot=user_form_application.numeroProtocollo)))

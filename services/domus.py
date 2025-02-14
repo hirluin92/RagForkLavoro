@@ -19,13 +19,13 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
 
         # Crea un contesto SSL personalizzato
         ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context.check_hostname = settings.ssl_context_check_hostname # False
+        ssl_context.verify_mode = settings.ssl_context_verify_mode # ssl.CERT_NONE
         
         logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_request, {"request_endpoint": endpoint})
         
-        headers = {misc_const.HTTP_HEADER_X_IBM_CLIENT_ID_NAME: settings.ibm_client_id_name,
-                misc_const.HTTP_HEADER_X_IBM_CLIENT_SECRET_NAME: settings.ibm_client_secret_name,
+        headers = {misc_const.HTTP_HEADER_X_IBM_CLIENT_ID_NAME: settings.ibm_client_id,
+                misc_const.HTTP_HEADER_X_IBM_CLIENT_SECRET_NAME: settings.ibm_client_secret,
                 misc_const.HTTP_HEADER_AUTHORIZATION: f"{misc_const.HTTP_HEADER_BEARER_NAME} {request.token}"
                 }
     
@@ -57,8 +57,8 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
 
         logger.track_event(event_types.domus_api_form_application_details_request, {"request_endpoint": endpoint})
 
-        headers = {misc_const.HTTP_HEADER_X_IBM_CLIENT_ID_NAME: settings.ibm_client_id_name,
-                misc_const.HTTP_HEADER_X_IBM_CLIENT_SECRET_NAME: settings.ibm_client_secret_name,
+        headers = {misc_const.HTTP_HEADER_X_IBM_CLIENT_ID_NAME: settings.ibm_client_id,
+                misc_const.HTTP_HEADER_X_IBM_CLIENT_SECRET_NAME: settings.ibm_client_secret,
                 misc_const.HTTP_HEADER_AUTHORIZATION: f"{misc_const.HTTP_HEADER_BEARER_NAME} {request.token}"}
 
         async with session.post(endpoint,
