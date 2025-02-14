@@ -1,3 +1,4 @@
+import ssl
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,3 +11,5 @@ class DomusApiSettings(BaseSettings):
     relative_url: str
     get_form_applications_by_fiscal_code_url: str
     get_form_application_details_url: str
+    check_hostname: bool = False
+    verify_mode: int = 1
