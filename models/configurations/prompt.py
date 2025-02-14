@@ -11,6 +11,8 @@ class PromptSettings(BaseSettings):
     completion_default_id: str
     completion_default_version: Optional[str] = None
     config_container: str = None
+    template_resolve_endpoint: str
+    template_api_key: str
     # msd_intent_recognition_default_id: str
     # msd_intent_recognition_default_version: Optional[str] = None
     # msd_completion_default_id: str

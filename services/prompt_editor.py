@@ -1,11 +1,14 @@
 import json
 import azure.functions as func
-from logging import Logger
-from typing import Optional, Tuple
+from models.apis.prompt_template_response_body import TemplateResolveResponse
+from services.logging import Logger
+from typing import Any, Dict, Optional, Tuple
 from aiohttp import ClientSession
+from requests import session
 from tenacity import retry, stop_after_attempt, wait_exponential
 from constants import event_types, prompt_editor
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
+from models.apis.prompt_template_request_body import TemplateResolveRequest
 from models.apis.rag_orchestrator_request import PromptEditorCredential
 from models.configurations.prompt import PromptSettings
 from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
@@ -128,7 +131,6 @@ async def a_get_enrichment_prompt_data(prompt_editor: list[PromptEditorCredentia
     result = await a_get_response_from_prompt_retrieval_api(promptId, logger, session,  version)
     return result
 
-
 async def a_get_completion_prompt_data(prompt_editor: list[PromptEditorCredential],
                                        logger: Logger,
                                        session: ClientSession) -> PromptEditorResponseBody:
@@ -153,7 +155,7 @@ async def get_prompt_id_and_version(prompt_editor: list[PromptEditorCredential],
     if not prompt_data:
         prompt_data = next((p for p in list_prompt_version_info if p.type == prompt_type), None)
         if not prompt_data:
-            raise Exception("No enrichment_prompt_data found.")
+            raise Exception("No prompt_data found.")
         
     return PromptEditorRequest(prompt_data.id, prompt_data.version, prompt_type)
 
@@ -161,6 +163,31 @@ def build_prompt_messages(prompt_data: PromptEditorResponseBody):
     messages = prompt_data.prompt
     tuple_messages = [(m.role, m.content) for m in messages]
     return tuple_messages
+
+async def a_get_prompt_from_resolve_jinja_template_api(logger: Logger,
+                                    message: str,
+                                    template_context: Dict[str, Any]) -> TemplateResolveResponse:
+    settings = PromptSettings()
+    resolve_endpoint = settings.template_resolve_endpoint
+
+    body = TemplateResolveRequest(message, template_context)
+
+    headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
+            misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.template_api_key}
+    
+    async with ClientSession.post(resolve_endpoint,
+                            data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
+                            headers=headers) as result:
+        result_json = await result.json()
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
+        
+        track_event_data = {
+            "request_endpoint": resolve_endpoint,
+            "response": result_json_string
+        }
+        logger.track_event(event_types.resolve_template_api_request, track_event_data)
+
+    return result_json
 
 async def a_get_form_application_name_by_tag(container_name: str, tag:str, logger: Logger)-> tuple:
     file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MSD_TAGS_MAPPING)
