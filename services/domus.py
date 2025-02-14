@@ -19,8 +19,8 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
 
         # Crea un contesto SSL personalizzato
         ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = settings.check_hostname # False
-        ssl_context.verify_mode = settings.verify_mode # ssl.CERT_NONE
+        ssl_context.check_hostname = settings.ssl_context_check_hostname # False
+        ssl_context.verify_mode = settings.ssl_context_verify_mode # ssl.CERT_NONE
         
         logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_request, {"request_endpoint": endpoint})
         
