@@ -655,7 +655,15 @@ async def test_extract_chat_history(monkeypatch):
         Interaction(question="How are you?", answer="Good, thanks!"),
     ]
     result = service.extract_chat_history(interactions)
-    assert result == "user: Hello?\r\nassistant: Hi!\r\nuser: How are you?\r\nassistant: Good, thanks!"
+    
+    expected_result = os.linesep.join([
+    "user: Hello?",
+    "assistant: Hi!",
+    "user: How are you?",
+    "assistant: Good, thanks!"
+    ])
+    
+    assert result == expected_result
 
 @pytest.mark.asyncio
 async def test_extract_chat_history_empty(monkeypatch):
