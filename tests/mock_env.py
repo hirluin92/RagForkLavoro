@@ -66,3 +66,6 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("PROMPT_ENRICHMENT_DEFAULT_ID", "default_enrichment_id")
     monkeypatch.setenv("PROMPT_COMPLETION_DEFAULT_ID", "default_completion_id")
     monkeypatch.setenv("PROMPT_CONFIG_CONTAINER", "mocked_container")
+    monkeypatch.setenv("CLOG_MSD_ELENCODOMANDE", "elenco domande")
+    monkeypatch.setenv("CLOG_MSD_DETTAGLIODOMANDE", "dettaglio domande")
+    
