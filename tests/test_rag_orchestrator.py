@@ -1,5 +1,6 @@
 import json
 import os
+from unittest.mock import AsyncMock, MagicMock
 import azure.functions as func
 import pytest
 import logics
@@ -14,6 +15,12 @@ from models.apis.rag_query_response_body import RagQueryResponse
 from models.services.cqa_response import CQAResponse
 from services.ai_query_service_mistralai import AiQueryServiceMistralAI
 from services.ai_query_service_openai import AiQueryServiceOpenAI
+from models.apis.rag_orchestrator_request import RagOrchestratorRequest, Interaction
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody
+from models.apis.rag_query_response_body import RagQueryResponse
+from models.apis.enrichment_query_response import EnrichmentQueryResponse
+from models.services.openai_intent_response import ClassifyIntentResponse
+from models.services.openai_domus_response import DomusAnswerResponse
 from services.logging import Logger
 from tests.mock_logging import set_mock_logger_builder
 from rag_orchestrator import a_rag_orchestrator as ragOrchestrator_endpoint
@@ -594,3 +601,65 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
     # Verify service calls
     mock_language_service.a_compute_classify_intent_query.assert_called_once()
     mock_language_service.a_get_domus_answer.assert_called_once()
+    
+    
+    
+# Classe concreta per testare la classe astratta
+class TestAiQueryService(AiQueryServiceBase):
+    @staticmethod
+    def model_id(cls):
+        return "test-model"
+
+    async def a_do_query(self, request, prompt_data, logger, session, domusData=None):
+        return RagQueryResponse()
+    
+    async def a_do_query_enrichment(self, request, prompt_data, logger):
+        return EnrichmentQueryResponse()
+
+    async def a_compute_classify_intent_query(self, request, prompt_data, logger):
+        return ClassifyIntentResponse()
+    
+    async def a_get_domus_answer(self, request, practice_detail, prompt_data, logger):
+        return DomusAnswerResponse()
+
+@pytest.mark.asyncio
+async def test_get_topic_from_tags(mocker, monkeypatch):
+    set_mock_env(monkeypatch)
+
+    service = TestAiQueryService()
+    logger = MagicMock(spec=Logger)
+    mock_tags = [MagicMock(description="Tag1"), MagicMock(description="Tag2")]
+    
+    # Mock di a_get_tags_by_tag_names
+    mocker.patch("logics.ai_query_service_base.a_get_tags_by_tag_names", new=AsyncMock(return_value=mock_tags))
+    
+    topic = await service.get_topic_from_tags(logger, ["Tag1", "Tag2"])
+    assert topic == "Tag1,Tag2"
+
+@pytest.mark.asyncio
+async def test_get_topic_from_tags_empty(mocker, monkeypatch):
+    set_mock_env(monkeypatch)
+    service = TestAiQueryService()
+    logger = MagicMock(spec=Logger)
+    mocker.patch("logics.ai_query_service_base.a_get_tags_by_tag_names", new=AsyncMock(return_value=[]))
+    
+    topic = await service.get_topic_from_tags(logger, ["Tag1", "Tag2"])
+    assert topic == ""
+
+@pytest.mark.asyncio
+async def test_extract_chat_history(monkeypatch):
+    set_mock_env(monkeypatch)
+    service = TestAiQueryService()
+    interactions = [
+        Interaction(question="Hello?", answer="Hi!"),
+        Interaction(question="How are you?", answer="Good, thanks!"),
+    ]
+    result = service.extract_chat_history(interactions)
+    assert result == "user: Hello?\r\nassistant: Hi!\r\nuser: How are you?\r\nassistant: Good, thanks!"
+
+@pytest.mark.asyncio
+async def test_extract_chat_history_empty(monkeypatch):
+    set_mock_env(monkeypatch)
+    service = TestAiQueryService()
+    result = service.extract_chat_history([])
+    assert result == ""
