@@ -17,10 +17,10 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_applications_by_fiscal_code_url}?codiceFiscale={request.user_fiscal_code}&lingua={request.language.upper()}"
 
-        # Crea un contesto SSL personalizzato
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = settings.ssl_context_check_hostname # False
-        ssl_context.verify_mode = settings.ssl_context_verify_mode # ssl.CERT_NONE
+        if settings.ssl_context_enable_custom:
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = settings.ssl_context_check_hostname
+                ssl_context.verify_mode = settings.ssl_context_verify_mode
         
         logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_request, {"request_endpoint": endpoint})
         
@@ -35,7 +35,6 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                 result_json = await result.json()
                 result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
 
-                # AGGIUNGERE FILTER BY TAGS
                 # result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code 
                 #                     and (domanda.statoDomanda.stato is None or domanda.statoDomanda.stato == request.form_application_status)]
                 result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
@@ -50,10 +49,10 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}?numeroDomus={request.domus_number}&lingua={request.language.upper()}&progressivoIstanza={request.progressivo_istanza}"
 
-        # Crea un contesto SSL personalizzato
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = settings.ssl_context_check_hostname # False
-        ssl_context.verify_mode = settings.ssl_context_verify_mode # ssl.CERT_NONE
+        if settings.ssl_context_enable_custom:
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = settings.ssl_context_check_hostname
+                ssl_context.verify_mode = settings.ssl_context_verify_mode
 
         logger.track_event(event_types.domus_api_form_application_details_request, {"request_endpoint": endpoint})
 
