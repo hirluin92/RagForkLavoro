@@ -31,7 +31,7 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
     
         async with session.post(endpoint,
                         headers=headers,
-                        ssl = ssl_context) as result:
+                        ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
                 result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
 
@@ -62,7 +62,7 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
 
         async with session.post(endpoint,
                                 headers=headers,
-                                ssl = ssl_context) as result:
+                                ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
                 result_obj = DomusFormAapplicationDetailsResponse.model_validate(result_json)
 
