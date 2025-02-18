@@ -17,6 +17,8 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_applications_by_fiscal_code_url}?codiceFiscale={request.user_fiscal_code}&lingua={request.language.upper()}"
 
+        ssl_context = None
+        
         if settings.ssl_context_enable_custom:
                 ssl_context = ssl.create_default_context()
                 ssl_context.check_hostname = settings.ssl_context_check_hostname
@@ -48,6 +50,8 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
 
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}?numeroDomus={request.domus_number}&lingua={request.language.upper()}&progressivoIstanza={request.progressivo_istanza}"
+
+        ssl_context = None
 
         if settings.ssl_context_enable_custom:
                 ssl_context = ssl.create_default_context()
