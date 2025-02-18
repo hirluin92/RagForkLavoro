@@ -52,8 +52,8 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
 
         # Crea un contesto SSL personalizzato
         ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context.check_hostname = settings.ssl_context_check_hostname # False
+        ssl_context.verify_mode = settings.ssl_context_verify_mode # ssl.CERT_NONE
 
         logger.track_event(event_types.domus_api_form_application_details_request, {"request_endpoint": endpoint})
 
