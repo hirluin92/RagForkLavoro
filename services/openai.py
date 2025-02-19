@@ -1,9 +1,10 @@
+from dataclasses import asdict
 import json
-from logging import Logger
+from services.logging import Logger
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from typing import List
+from typing import Any, Dict, List
 
 from openai import APIConnectionError
 from exceptions.custom_exceptions import CustomPromptParameterError
@@ -15,7 +16,7 @@ from models.services.openai_intent_response import ClassifyIntentResponse
 from models.services.openai_rag_response import RagResponse, RagResponseOutputParser
 import constants.event_types as event_types
 import constants.llm as llm_const
-from services.prompt_editor import build_prompt_messages
+from services.prompt_editor import a_get_prompt_from_resolve_jinja_template_api, build_prompt_messages
 from utils.settings import get_openai_settings
 
 
@@ -31,6 +32,7 @@ async def a_generate_embedding_from_text(text: str):
                                        check_embedding_ctx_length=False)
     return await embeddings.aembed_query(text)
 
+
 async def a_get_answer_from_context(question: str,
                                     context: List[LlmContextContent],
                                     prompt_data: PromptEditorResponseBody,
@@ -40,17 +42,22 @@ async def a_get_answer_from_context(question: str,
     """
     settings = get_openai_settings()
 
-    prompt_messages = build_prompt_messages(prompt_data)
+    context_json_string = [asdict(c) for c in context]
 
-    # Check prompt parameter on prompt messages
-    parameters = [f"{{{llm_const.question_variable}}}", f"{{{llm_const.context_variable}}}"]
-    check = check_prompt_variable(prompt_messages, parameters)
-    if not check:
-        err_code = llm_const.status_code_var_compl
-        mex = "Invalid completion prompt parameters"
-        custom_err = CustomPromptParameterError(mex, err_code)
-        raise custom_err
+    template_data = {
+        "documents": context_json_string,
+        "question": question
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
     
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable, llm_const.context_variable]
+    value_parameters = [question, context]
+    variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
+
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
+
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
@@ -74,9 +81,10 @@ async def a_get_answer_from_context(question: str,
     logger.track_event(event_types.llm_answer_generation_openai_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke({
-        llm_const.question_variable: question,
-        llm_const.context_variable: context})
+
+    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
+
+        
     
     logger.track_event(event_types.llm_answer_generation_response_event,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
@@ -102,16 +110,20 @@ async def a_get_enriched_query(question: str,
     """
     settings = get_openai_settings()
 
-    prompt_messages = build_prompt_messages(prompt_data)
+    template_data = {
+        "question": question,
+        "topic": topic,
+        "chat": chat_history
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
+    
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable, llm_const.topic_variable, llm_const.chat_variable]
+    value_parameters = [question, topic, chat_history]
+    variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
-    # Check prompt parameter on prompt messages
-    parameters = [f"{{{llm_const.question_variable}}}", f"{{{llm_const.topic_variable}}}", f"{{{llm_const.chat_variable}}}"]
-    check = check_prompt_variable(prompt_messages, parameters)
-    if not check:
-        err_code = llm_const.status_code_var_enrich
-        mex = "Invalid enrichment prompt parameters"
-        custom_err = CustomPromptParameterError(mex, err_code)
-        raise custom_err
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
     
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
@@ -137,11 +149,7 @@ async def a_get_enriched_query(question: str,
     result_content = None
 
     try:
-        prompt_and_model_result = await chain.ainvoke({
-            llm_const.topic_variable: topic,
-            llm_const.question_variable: question,
-            llm_const.chat_variable: chat_history 
-        })
+        prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
         logger.track_event(event_types.llm_enrichment_response_event,
                            {"enrichedQuery": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
@@ -171,17 +179,18 @@ async def a_get_intent_from_enriched_query(question: str,
                                             logger: Logger) -> ClassifyIntentResponse:
     settings = get_openai_settings()
 
-    prompt_messages = build_prompt_messages(prompt_data)
+    template_data = {
+        "question": question
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
+    
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable]
+    value_parameters = [question]
+    variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
-    # Check prompt parameter on prompt messages
-    parameters = [f"{{{llm_const.question_variable}}}"]
-    check = check_prompt_variable(prompt_messages, parameters)
-    if not check:
-        err_code = llm_const.status_code_var_intent
-        mex = "Invalid classify intent prompt parameters"
-        
-        custom_err = CustomPromptParameterError(mex, err_code)
-        raise custom_err
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
     
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
@@ -206,8 +215,7 @@ async def a_get_intent_from_enriched_query(question: str,
     logger.track_event(event_types.llm_intent_classification_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke({
-        llm_const.question_variable: question})
+    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
     
     logger.track_event(event_types.llm_intent_classification_response,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
@@ -225,16 +233,19 @@ async def a_get_answer_from_domus(question: str,
                                     logger: Logger) -> DomusAnswerResponse:
     settings = get_openai_settings()
 
-    prompt_messages = build_prompt_messages(prompt_data)
+    template_data = {
+        "question": question,
+        "practice_detail": practice_detail
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
+    
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable, llm_const.practice_detail_variable]
+    value_parameters = [practice_detail]
+    variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
-    # Check prompt parameter on prompt messages
-    parameters = [f"{{{llm_const.question_variable}}}"]
-    check = check_prompt_variable(prompt_messages, parameters)
-    if not check:
-        err_code = llm_const.status_code_var_domus
-        mex = "Invalid domus answer prompt parameters"
-        custom_err = CustomPromptParameterError(mex, err_code)
-        raise custom_err
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
     
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
     
@@ -259,9 +270,7 @@ async def a_get_answer_from_domus(question: str,
     logger.track_event(event_types.llm_domus_answer_generation_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke({
-        llm_const.question_variable: question,
-        llm_const.domus_detail_variable: practice_detail})
+    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
     
     logger.track_event(event_types.llm_domus_answer_generation_response,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
@@ -273,9 +282,26 @@ async def a_get_answer_from_domus(question: str,
     return result_content
 
 
-def check_prompt_variable(messages, parameters):
-    result_string = " | ".join([f"{item[0]} {item[1]}" for item in messages])
-    if all(p in result_string for p in parameters):
-        return True
-    else:
-        return False
+async def a_resolve_template(logger: Logger, prompt_data: PromptEditorResponseBody, template_context: Dict[str, Any]):
+    messages = prompt_data.prompt
+    prompt_variables = []
+    for m in messages:
+        resolved_message = await a_get_prompt_from_resolve_jinja_template_api(logger, m.content, template_context)
+        logger.track_event(event_types.resolve_template_api_response, 
+                           {
+                               "promptId": prompt_data.id,
+                               "message_role": m.role,
+                               "resolved_message": json.dumps(resolved_message.__dict__, ensure_ascii=False).encode('utf-8'),
+                            })
+        m.content = resolved_message.resolved_template
+        prompt_variables.extend(resolved_message.parameters)
+    prompt_data.parameters = list(set(prompt_variables))
+
+    return prompt_data
+
+
+def check_prompt_variables(prompt_data: PromptEditorResponseBody, fixed_parameters: list[str]):
+    prompt_parameters = prompt_data.parameters
+    parameters_indices = []
+    parameters_indices = [fixed_parameters.index(item) for item in prompt_parameters if item in fixed_parameters]
+    return parameters_indices

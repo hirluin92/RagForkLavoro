@@ -1,5 +1,7 @@
 import json
+import aiohttp
 import azure.functions as func
+from exceptions.custom_exceptions import CustomPromptParameterError
 from models.apis.prompt_template_response_body import TemplateResolveResponse
 from services.logging import Logger
 from typing import Any, Dict, Optional, Tuple
@@ -146,7 +148,6 @@ async def a_get_completion_prompt_data(prompt_editor: list[PromptEditorCredentia
     result = await a_get_response_from_prompt_retrieval_api(promptId, logger, session, version)
     return result
 
-
 async def get_prompt_id_and_version(prompt_editor: list[PromptEditorCredential],
                                     list_prompt_version_info: list[PromptEditorCredential],
                                     prompt_type: llm_const
@@ -159,11 +160,6 @@ async def get_prompt_id_and_version(prompt_editor: list[PromptEditorCredential],
         
     return PromptEditorRequest(prompt_data.id, prompt_data.version, prompt_type)
 
-def build_prompt_messages(prompt_data: PromptEditorResponseBody):
-    messages = prompt_data.prompt
-    tuple_messages = [(m.role, m.content) for m in messages]
-    return tuple_messages
-
 async def a_get_prompt_from_resolve_jinja_template_api(logger: Logger,
                                     message: str,
                                     template_context: Dict[str, Any]) -> TemplateResolveResponse:
@@ -175,19 +171,26 @@ async def a_get_prompt_from_resolve_jinja_template_api(logger: Logger,
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
             misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.template_api_key}
     
-    async with ClientSession.post(resolve_endpoint,
-                            data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
+    async with aiohttp.ClientSession() as session:
+        async with session.post(resolve_endpoint,
+                            data=json.dumps(body.to_dict(), ensure_ascii=False).encode('utf-8'),
                             headers=headers) as result:
-        result_json = await result.json()
-        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
-        
-        track_event_data = {
-            "request_endpoint": resolve_endpoint,
-            "response": result_json_string
-        }
-        logger.track_event(event_types.resolve_template_api_request, track_event_data)
+            if result.status == 200:
+                result_json = await result.json()
+                result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
+                
+                track_event_data = {
+                    "request_endpoint": resolve_endpoint,
+                    "response": result_json_string
+                }
+                logger.track_event(event_types.resolve_template_api_request, track_event_data)
+                result_object = TemplateResolveResponse.from_dict(result_json)
+            else:
+                error_message = result_json_string
+                logger.exception(error_message)
+                raise Exception(error_message)
 
-    return result_json
+    return result_object
 
 async def a_get_form_application_name_by_tag(container_name: str, tag:str, logger: Logger)-> tuple:
     file_content = await a_get_blob_content_from_container(container_name, prompt_editor.MSD_TAGS_MAPPING)
@@ -197,3 +200,8 @@ async def a_get_form_application_name_by_tag(container_name: str, tag:str, logge
             return elemento["domus_form_application_code"], elemento["domus_form_application_name"]
     
     raise Exception(f"No domus form application name or code found for '{tag}'.")
+
+def build_prompt_messages(prompt_data: PromptEditorResponseBody):
+    messages = prompt_data.prompt
+    tuple_messages = [(m.role, m.content) for m in messages]
+    return tuple_messages

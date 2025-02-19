@@ -221,7 +221,7 @@ async def a_get_answer_from_domus(question: str,
 
     prompt_and_model_result = await chain.ainvoke({
         llm_const.question_variable: question,
-        llm_const.domus_detail_variable: practice_detail})
+        llm_const.practice_detail_variable: practice_detail})
     
     logger.track_event(event_types.llm_domus_answer_generation_response,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
