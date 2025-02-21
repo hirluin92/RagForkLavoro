@@ -144,9 +144,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         return None
         
     # Intent recognition
-    intent_prompt_data = PromptEditorResponseBody(msd_intent_recognition_prompt_data.version, msd_intent_recognition_prompt_data.llm_model,
-                                                msd_intent_recognition_prompt_data.prompt, msd_intent_recognition_prompt_data.parameters, 
-                                                msd_intent_recognition_prompt_data.model_parameters)
+    intent_prompt_data = msd_intent_recognition_prompt_data
     
     intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
     
@@ -249,9 +247,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
     if msd_completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
 
-    domus_prompt_data = PromptEditorResponseBody(msd_completion_prompt_data.version, msd_completion_prompt_data.llm_model,
-                                    msd_completion_prompt_data.prompt, msd_completion_prompt_data.parameters, 
-                                    msd_completion_prompt_data.model_parameters)
+    domus_prompt_data = msd_completion_prompt_data
         
     domus_result = await language_service.a_get_domus_answer(request, form_application_details, domus_prompt_data, logger)
 
