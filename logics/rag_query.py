@@ -1,6 +1,5 @@
 import json
 from typing import List
-
 from aiohttp import ClientSession
 from constants import event_types
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
