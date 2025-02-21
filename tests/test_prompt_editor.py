@@ -23,6 +23,7 @@ async def test_a_get_response_from_prompt_retrieval_api(monkeypatch):
     mock_response = AsyncMock(spec=ClientResponse)
     mock_response.json = AsyncMock(return_value={
         "version": "1.0",
+        "id": "guid",
         "llm_model": "model_name",
         "prompt": [{"role": "user", "content": "Hello"}],
         "parameters": ["param1", "param2"],
@@ -32,7 +33,9 @@ async def test_a_get_response_from_prompt_retrieval_api(monkeypatch):
             "max_length": 100,
             "stop_sequence": "END"
         },
-        "label": "example"
+        "label": "example",
+        "validation_messages": []
+
     })
     
     mock_session.get.return_value.__aenter__.return_value = mock_response
@@ -70,35 +73,43 @@ async def test_a_get_prompts_data(monkeypatch):
     dummy_response_list = [
         {
             "version": "dummy",
+            "id": "guid",
             "llm_model": "dummy",
             "prompt": [],
             "parameters": [],
             "model_parameters": {"top_p": 1.0, "temperature": 0.5, "max_length": 100, "stop_sequence": None},
-            "label": "enrichment"
+            "label": "enrichment",
+            "validation_messages": []
         },
         {
             "version": "dummy",
+            "id": "guid",
             "llm_model": "dummy",
             "prompt": [],
             "parameters": [],
             "model_parameters": {"top_p": 1.0, "temperature": 0.5, "max_length": 100, "stop_sequence": None},
-            "label": "completion"
+            "label": "completion",
+            "validation_messages": []
         },
         {
             "version": "dummy",
+            "id": "guid",            
             "llm_model": "dummy",
             "prompt": [],
             "parameters": [],
             "model_parameters": {"top_p": 1.0, "temperature": 0.5, "max_length": 100, "stop_sequence": None},
-            "label": "msd_intent_recognition"
+            "label": "msd_intent_recognition",
+            "validation_messages": []
         },
         {
             "version": "dummy",
+            "id": "guid",            
             "llm_model": "dummy",
             "prompt": [],
             "parameters": [],
             "model_parameters": {"top_p": 1.0, "temperature": 0.5, "max_length": 100, "stop_sequence": None},
-            "label": "msd_completion"
+            "label": "msd_completion",
+            "validation_messages": []
         }
     ]
     

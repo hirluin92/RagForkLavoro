@@ -63,7 +63,10 @@ async def test_query_success(mocker, monkeypatch):
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    id = "guid",
+                                                    label="tag",
+                                                    validation_messages=[])
     mocker.patch('rag_augment_query.a_get_enrichment_prompt_data', return_value = mock_prompt_data)
 
     mock_result = mocker.Mock(standalone_question="answer",end_conversation=False)

@@ -176,7 +176,10 @@ async def test_execute_query_empty_search_results_ok(mocker, monkeypatch):
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
     mock_embedding = mocker.Mock()
     mocker.patch(
         "logics.rag_query.openai_generate_embedding_from_text",
@@ -212,7 +215,10 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= None,
-                                                    label= None)
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[]
+                                                    )                                              
     
     mock_embedding = mocker.Mock()
     mocker.patch(
@@ -263,7 +269,9 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= None,
-                                                    label= None)
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[]) 
     
     mock_embedding = mocker.Mock()
     mocker.patch(
@@ -322,7 +330,10 @@ async def test_query_ok(mocker, monkeypatch):
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])                                             
     
     mock_result = RagQueryResponse(
         response='answer', 
@@ -364,7 +375,10 @@ async def test_query_ko(mocker, monkeypatch):
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= None)
+                                                    model_parameters= None,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
     req_body = {
         "query": "query",
         "llm_model_id": "model",

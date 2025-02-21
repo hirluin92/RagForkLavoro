@@ -436,15 +436,16 @@ async def test_intent_recognition_altro(mocker, monkeypatch):
             "label": "msd_completion"
         }
     ]
-    
-    mock_prompt_data = [
-        PromptEditorResponseBody(version='1',
+    mock_prompt = PromptEditorResponseBody(version='1',
                                 llm_model='OPENAI',
                                 prompt=[],
                                 parameters=[],
                                 model_parameters=None,
-                                label=None) for _ in range(4)
-    ]
+                                id = "guid",
+                                label = "tag",
+                                validation_messages=[])
+
+    mock_prompt_data = [mock_prompt, mock_prompt, mock_prompt, mock_prompt]
     
     mocker.patch('logics.rag_orchestrator.a_get_prompt_info', return_value=mock_prompt_info)
     mocker.patch('logics.rag_orchestrator.a_get_prompts_data', return_value=mock_prompt_data)
@@ -524,7 +525,9 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
                                 prompt=[],
                                 parameters=[],
                                 model_parameters=None,
-                                label=None) for _ in range(4)
+                                id = "guid",
+                                label = "tag",
+                                validation_messages=[]) for _ in range(4)
     ]
     
     mocker.patch('logics.rag_orchestrator.a_get_prompt_info', return_value=mock_prompt_info)
