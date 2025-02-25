@@ -249,7 +249,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
 
     domus_prompt_data = msd_completion_prompt_data
         
-    domus_result = await language_service.a_get_domus_answer(request, form_application_details, domus_prompt_data, logger)
+    domus_result = await language_service.a_get_domus_answer(request, str(form_application_details.model_dump()), domus_prompt_data, logger)
 
     if domus_result:
         if domus_result.has_answer and domus_result.answer:
