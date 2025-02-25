@@ -241,7 +241,7 @@ async def a_get_answer_from_domus(question: str,
     
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable, llm_const.practice_detail_variable]
-    value_parameters = [practice_detail]
+    value_parameters = [question, practice_detail]
     variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
