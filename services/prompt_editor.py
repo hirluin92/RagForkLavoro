@@ -175,9 +175,9 @@ async def a_get_prompt_from_resolve_jinja_template_api(logger: Logger,
         async with session.post(resolve_endpoint,
                             data=json.dumps(body.to_dict(), ensure_ascii=False).encode('utf-8'),
                             headers=headers) as result:
+            result_json = await result.json()
+            result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
             if result.status == 200:
-                result_json = await result.json()
-                result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
                 
                 track_event_data = {
                     "request_endpoint": resolve_endpoint,
