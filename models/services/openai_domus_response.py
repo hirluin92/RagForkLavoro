@@ -1,7 +1,7 @@
+from typing import Optional
 from pydantic import BaseModel
 
-
 class DomusAnswerResponse(BaseModel):
-    reason: str 
-    answer: str
-    has_answer: bool  
+    reason: Optional[str] 
+    answer: Optional[str]
+    has_answer: Optional[bool]  
