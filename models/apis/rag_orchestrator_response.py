@@ -12,6 +12,7 @@ class EventMonitorFormApplication:
     user_no_form_application = "UserNoFormApplication"
     show_answer_text = "ShowAnswerText"
     show_answer_list = "ShowAnswerList"
+    application_error= "ApplicationError"
 
 class MonitorFormApplication:
     def __init__(self, answer_text = None, answer_list = None, event_type: EventMonitorFormApplication = None):

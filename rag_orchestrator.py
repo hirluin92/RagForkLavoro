@@ -3,7 +3,7 @@ import azure.functions as func
 import json
 from pydantic import ValidationError
 from constants import event_types
-from exceptions.custom_exceptions import CustomPromptParameterError, MonitorFormApplicationException
+from exceptions.custom_exceptions import CustomPromptParameterError
 from logics.rag_orchestrator import a_get_query_response
 from services.logging import LoggerBuilder
 from utils.http_problem import Problem
@@ -73,13 +73,6 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                                    })
 
                 return func.HttpResponse(json_content, mimetype="application/json")
-        except MonitorFormApplicationException as e:
-            logger.exception(e)
-            problem = Problem(500, "Internal server error", e.clog.model_dump(), None, None)
-            return func.HttpResponse(
-                json.dumps(problem.to_dict()),
-                status_code=500,
-                mimetype="application/problem+json")
         
         except ValidationError as e:
             problem = Problem(422, "Bad Request", e.errors(), None, None)
