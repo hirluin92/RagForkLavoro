@@ -2,7 +2,6 @@ import json
 from aiohttp import ClientResponseError, ClientSession
 from constants import clog, event_types
 from constants import llm as llm_const
-from exceptions.custom_exceptions import MonitorFormApplicationException
 from logics.ai_query_service_factory import AiQueryServiceFactory
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
@@ -267,4 +266,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         logger.exception(e)
         clog_last_status.ret_code=500
         clog_last_status.err_desc=clog.DOMUSGENERALAPPLICATIONERROR
-        raise MonitorFormApplicationException(error_code=500, message="Errore applicativo", clog=clog_last_status)
+        
+        return RagOrchestratorResponse("", "", None, "", 
+                                        MonitorFormApplication(event_type=EventMonitorFormApplication.application_error),
+                                        clog_last_status)
