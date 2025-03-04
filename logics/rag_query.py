@@ -1,6 +1,5 @@
 import json
 from typing import List
-
 from aiohttp import ClientSession
 from constants import event_types
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
@@ -23,11 +22,15 @@ from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 async def a_execute_query(request: RagOrchestratorRequest,
                         prompt_data: PromptEditorResponseBody,
                         logger: Logger,
-                        session: ClientSession) -> RagQueryResponse:
+                        session: ClientSession, 
+                        domusData: str = None) -> RagQueryResponse:
     embedding = await openai_generate_embedding_from_text(request.query)
     search_result: SearchIndexResponse = await query_azure_ai_search(
         session, request, embedding, logger)
     search_result_context = build_question_context_from_search(search_result)
+
+    if domusData:
+        search_result_context.append(RagContextContent("", domusData, len(search_result_context)+1, "", 100, request.tags[0]))
 
     if len(search_result_context) == 0:
         return RagQueryResponse(llm_const.default_answer,
@@ -39,8 +42,7 @@ async def a_execute_query(request: RagOrchestratorRequest,
                                 [],
                                 [])
 
-    response_from_llm = await a_get_response_from_llm(
-        request.query, search_result_context, prompt_data, logger)
+    response_from_llm = await a_get_response_from_llm(request.query, search_result_context, prompt_data, logger)
 
 
     response_for_user = build_response_for_user(response_from_llm, search_result_context)

@@ -1,7 +1,7 @@
 import json
 import pytest
-
 import azure.functions as func
+from tests.mock_env import set_mock_env
 from document_intelligence import document_intelligence
 from logics.document_intelligence import a_get_documents_content, a_get_content_from_document_intelligence
 from services.document_intelligence import a_analyze_layout

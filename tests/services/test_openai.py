@@ -3,10 +3,12 @@ import pytest
 from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from models.apis.prompt_editor_response_body import ModelParameters, PromptEditorResponseBody
+from models.apis.prompt_editor_response_body import PromptEditorResponseBody, OpenAIModelParameters
 from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context,
-    a_get_enriched_query as openai_get_enriched_query
+    a_get_answer_from_domus,
+    a_get_enriched_query as openai_get_enriched_query,
+    a_get_intent_from_enriched_query
     )
 from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
@@ -32,12 +34,15 @@ async def test_openai_get_answer_from_context(mocker,
     # Arrange
     set_mock_env(monkeypatch)
     mock_logger = MockLogger()
-    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
     mock_prompt_data = PromptEditorResponseBody(version = '1',
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= mock_model_parameters)
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
     # Sample question and context
     question = "What is the capital of France?"
     mock_context = mocker.Mock()
@@ -46,8 +51,12 @@ async def test_openai_get_answer_from_context(mocker,
     context = [mock_context]
 
     mocker.patch(
-        "services.openai.check_prompt_variable",
-        return_value=True
+        "services.openai.asdict"
+    )
+
+    mocker.patch(
+        "services.openai.check_prompt_variables",
+        return_value=[0]
     )
 
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
@@ -74,16 +83,19 @@ async def test_do_query_enrichment(mocker,
     # Arrange
     set_mock_env(monkeypatch)
     mock_logger = MockLogger()
-    mock_model_parameters = ModelParameters(0.0, 0.8, 2000, None)
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
     mock_prompt_data = PromptEditorResponseBody(version = '1',
                                                     llm_model='OPENAI',
                                                     prompt = [],
                                                     parameters=[],
-                                                    model_parameters= mock_model_parameters)
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
     
     mocker.patch(
-        "services.openai.check_prompt_variable",
-        return_value=True
+        "services.openai.check_prompt_variables",
+        return_value=[0]
     )
 
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
@@ -100,6 +112,87 @@ async def test_do_query_enrichment(mocker,
 
     # Assert
     assert result.standalone_question == "standalone question"
+
+@pytest.mark.asyncio 
+async def test_get_intent_from_enriched_query(mocker,
+                             monkeypatch,
+                             mock_chat_prompt_template,
+                             mock_azure_chat_openai):
+        # Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = MockLogger()
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
+    # Sample question and context
+    question = "Quale è lo stato della mia pratica"
+
+    mocker.patch(
+        "services.openai.check_prompt_variables",
+        return_value=[0]
+    )
+
+    mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
+    mock_azure_chat_openai.complete.return_value = True
+
+    mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
+    mock_parser.intent = "Lista"
+    mock_parser.return_value = mock_parser
+    # Act
+    result = await a_get_intent_from_enriched_query(question,                       
+                                            mock_prompt_data,
+                                            mock_logger)
+
+    # Assert
+    assert result.intent == "Lista"
+
+@pytest.mark.asyncio 
+async def test_get_answer_from_domus(mocker,
+                             monkeypatch,
+                             mock_chat_prompt_template,
+                             mock_azure_chat_openai):
+    # Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = MockLogger()
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
+    # Sample question and context
+    question = "Quale è lo stato della mia pratica"
+    practice_detail = "json practice detail"
+
+    mocker.patch(
+        "services.openai.check_prompt_variables",
+        return_value=[0]
+    )
+
+    mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
+    mock_azure_chat_openai.complete.return_value = True
+
+    mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
+    mock_parser.answer = "Sospesa"
+    mock_parser.return_value = mock_parser
+    # Act
+    result = await a_get_answer_from_domus(question,
+                                            practice_detail,
+                                            mock_prompt_data,
+                                            mock_logger)
+
+    # Assert
+    assert result.answer == "Sospesa"
+
 
     
     

@@ -3,7 +3,7 @@ import azure.functions as func
 import json
 from pydantic import ValidationError
 from constants import event_types
-from exceptions.custom_exceptions import CustomPromptParameterError
+from exceptions.custom_exceptions import CustomPromptParameterError, MonitorFormApplicationException
 from logics.rag_orchestrator import a_get_query_response
 from services.logging import LoggerBuilder
 from utils.http_problem import Problem
@@ -52,7 +52,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                                {
                                    "request-body":  json.dumps(req_body, ensure_ascii=False).encode('utf-8')
                                })
-            async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with aiohttp.ClientSession(raise_for_status=True, trust_env=True) as session:
                 query_response = await a_get_query_response(request, logger, session)
                 json_content = json.dumps(
                     query_response, ensure_ascii=False, default=lambda x: x.__dict__).encode('utf-8')
@@ -73,6 +73,14 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                                    })
 
                 return func.HttpResponse(json_content, mimetype="application/json")
+        except MonitorFormApplicationException as e:
+            logger.exception(e)
+            problem = Problem(500, "Internal server error", e.clog.model_dump(), None, None)
+            return func.HttpResponse(
+                json.dumps(problem.to_dict()),
+                status_code=500,
+                mimetype="application/problem+json")
+        
         except ValidationError as e:
             problem = Problem(422, "Bad Request", e.errors(), None, None)
             return func.HttpResponse(json.dumps(problem.to_dict()),
@@ -85,8 +93,9 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             return func.HttpResponse(json.dumps(problem.to_dict()),
                                     status_code=e.error_code,
                                     mimetype="application/problem+json")
+            
         except Exception as e:
-            logger.exception(e.args[0])
+            logger.exception(e)
             problem = Problem(500, "Internal server error",
                               e.args[0], None, None)
             return func.HttpResponse(

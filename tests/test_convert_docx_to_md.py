@@ -2,8 +2,8 @@ import json
 import io
 from pydantic import ValidationError
 import pytest
-
 import azure.functions as func
+from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger, set_mock_logger_builder
 from tests.mock_logging import set_mock_logger_builder
 from tests.mock_env import set_mock_env
