@@ -17,7 +17,7 @@ from services.prompt_editor import build_prompt_messages
 from utils.settings import get_mistralai_settings
 from constants import llm as llm_const
 
-async def a_get_answer_from_context(question: str,
+async def a_get_answer_from_context(question: str, lang: str,
                             context: List[LlmContextContent],
                             prompt_data: PromptEditorResponseBody,
                             logger: Logger) -> RagResponse:
@@ -50,7 +50,8 @@ async def a_get_answer_from_context(question: str,
             "deployment": settings.model,
             "temperature": prompt_data.model_parameters.temperature, 
             "max_tokens": prompt_data.model_parameters.max_length,
-            "user_question": question
+            "user_question": question,
+            "lang": lang
         }
 
     logger.track_event(event_types.llm_answer_generation_mistralai_request,

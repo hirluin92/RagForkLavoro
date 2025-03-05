@@ -42,7 +42,7 @@ async def a_execute_query(request: RagOrchestratorRequest,
                                 [],
                                 [])
 
-    response_from_llm = await a_get_response_from_llm(request.query, search_result_context, prompt_data, logger)
+    response_from_llm = await a_get_response_from_llm(request.query, request.lang, search_result_context, prompt_data, logger)
 
 
     response_for_user = build_response_for_user(response_from_llm, search_result_context)
@@ -99,7 +99,7 @@ def build_question_context_from_search(search_result: SearchIndexResponse) -> li
 
     return sorted(content, key=lambda x: x.score, reverse=True)
 
-async def a_get_response_from_llm(question: str,
+async def a_get_response_from_llm(question: str, lang: str,
                           context: List[RagContextContent],
                           prompt_data: PromptEditorResponseBody,
                           logger) -> RagResponse:
@@ -117,12 +117,12 @@ async def a_get_response_from_llm(question: str,
     logger.track_event(event_types.llm_answer_generation_request_event, data_to_log)
     
     if llm_model_id == llm_const.mistralai:
-        return await mistralai_get_answer_from_context(question,
+        return await mistralai_get_answer_from_context(question, lang,
                                                  context_to_send,
                                                  prompt_data,
                                                  logger)
     else:
-        return await openai_get_answer_from_context(question,
+        return await openai_get_answer_from_context(question, lang,
                                               context_to_send,
                                               prompt_data,
                                               logger)
