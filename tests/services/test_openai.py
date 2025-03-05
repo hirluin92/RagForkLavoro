@@ -45,6 +45,7 @@ async def test_openai_get_answer_from_context(mocker,
                                                     validation_messages=[])
     # Sample question and context
     question = "What is the capital of France?"
+    lang = "en"
     mock_context = mocker.Mock()
     mock_context.chunk_id = "id"
     mock_context.toJSON.return_value = "json str"
@@ -67,7 +68,7 @@ async def test_openai_get_answer_from_context(mocker,
     mock_parser.response = "Paris"
     mock_parser.return_value = mock_parser
     # Act
-    result = await openai_get_answer_from_context(question,
+    result = await openai_get_answer_from_context(question, lang,
                                             context,
                                             mock_prompt_data,
                                             mock_logger)
