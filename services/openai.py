@@ -33,7 +33,7 @@ async def a_generate_embedding_from_text(text: str):
     return await embeddings.aembed_query(text)
 
 
-async def a_get_answer_from_context(question: str,
+async def a_get_answer_from_context(question: str, lang: str,
                                     context: List[LlmContextContent],
                                     prompt_data: PromptEditorResponseBody,
                                     logger: Logger) -> RagResponse:
@@ -46,13 +46,14 @@ async def a_get_answer_from_context(question: str,
 
     template_data = {
         "documents": context_json_string,
-        "question": question
+        "question": question,
+        "lang": lang
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
     
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable, llm_const.context_variable]
-    value_parameters = [question, context]
+    value_parameters = [question, context_json_string]
     variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
