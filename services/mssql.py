@@ -11,6 +11,10 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     sql_query = f"""
     SELECT [Name]
     ,[Description]
+    ,EnableCQA
+    ,EnableEnrichment
+    ,IdMonitoringQuestion
+    ,EnableMonitoringQuestion
     FROM [dbo].[Tags]
     WHERE [Name] IN ({tags_filter})
     """ 
@@ -24,7 +28,13 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
                 await cursor.execute(sql_query)
                 records = await cursor.fetchall()
                 for r in records:
-                    tags_to_return.append(MsSqlTag(r.Name, r.Description))
+                    tags_to_return.append(MsSqlTag(
+                        r.Name, 
+                        r.Description, 
+                        r.EnableCQA,
+                        r.EnableEnrichment,
+                        r.IdMonitoringQuestion,
+                        r.EnableMonitoringQuestion))
 
     logger.info(f"after a_get_tags_by_tag_names")
     return tags_to_return
