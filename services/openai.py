@@ -50,7 +50,7 @@ async def a_get_answer_from_context(question: str, lang: str,
         "lang": lang
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
-    
+
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable, llm_const.context_variable]
     value_parameters = [question, context_json_string]
@@ -60,7 +60,7 @@ async def a_get_answer_from_context(question: str, lang: str,
     prompt_messages = build_prompt_messages(resolved_jinja_prompt)
 
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
-    
+
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
                           azure_deployment=settings.completion_deployment_model,
                           api_version=settings.api_version,
@@ -69,7 +69,7 @@ async def a_get_answer_from_context(question: str, lang: str,
                           max_tokens=prompt_data.model_parameters.max_length,
                           timeout=30)
 
-    chain = prompt | llm.with_retry() 
+    chain = prompt | llm.with_retry()
 
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
@@ -82,21 +82,23 @@ async def a_get_answer_from_context(question: str, lang: str,
     logger.track_event(event_types.llm_answer_generation_openai_request,
                        data_to_log)
 
+    try:
+        prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
-    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
+        logger.track_event(event_types.llm_answer_generation_response_event,
+                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
 
-        
-    
-    logger.track_event(event_types.llm_answer_generation_response_event,
-                       {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
-    
-    result_content_parser = PydanticOutputParser(
-        pydantic_object=RagResponseOutputParser)
-    result_content = await result_content_parser.ainvoke(prompt_and_model_result)
-    
+        result_content_parser = PydanticOutputParser(
+            pydantic_object=RagResponseOutputParser)
+        result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+
+    except Exception as err:
+        logger.error(err)
+        raise err
+
     return RagResponse(result_content.response,
-                       result_content.references,
-                   prompt_and_model_result.response_metadata.get("finish_reason", "ND"))
+                        result_content.references,
+                    prompt_and_model_result.response_metadata.get("finish_reason", "ND"))
 
 
 async def a_get_enriched_query(question: str,
@@ -106,7 +108,7 @@ async def a_get_enriched_query(question: str,
                                logger: Logger) -> EnrichmentQueryResponse:
     """
         Contatta il servizio di OpenAI, per migliorare il testo della richiesta.
-        Restituisce una EnrichmentQueryResponse, in cui il valore della proprietà EndConversation = true, 
+        Restituisce una EnrichmentQueryResponse, in cui il valore della proprietà EndConversation = true,
         indica un fallimento nell'operazione
     """
     settings = get_openai_settings()
@@ -117,7 +119,7 @@ async def a_get_enriched_query(question: str,
         "chat": chat_history
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
-    
+
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable, llm_const.topic_variable, llm_const.chat_variable]
     value_parameters = [question, topic, chat_history]
@@ -125,9 +127,9 @@ async def a_get_enriched_query(question: str,
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
     prompt_messages = build_prompt_messages(resolved_jinja_prompt)
-    
+
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
-    
+
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
                           azure_deployment=settings.completion_deployment_model,
                           api_version=settings.api_version,
@@ -136,7 +138,7 @@ async def a_get_enriched_query(question: str,
                           max_tokens=prompt_data.model_parameters.max_length,
                           timeout=30)
 
-    chain = prompt | llm.with_retry() 
+    chain = prompt | llm.with_retry()
 
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
@@ -163,19 +165,14 @@ async def a_get_enriched_query(question: str,
         result_content = EnrichmentQueryResponse(standalone_question="",
                                                  end_conversation=True,
                                                  end_conversation_reason=llm_const.default_content_filter_answer)
-    except Exception as e:
-        if e.status_code == 400:
-            logger.exception(e.message)
-            result_content = EnrichmentQueryResponse(standalone_question="",
-                                                     end_conversation=True,
-                                                     end_conversation_reason=llm_const.default_content_filter_answer)
-        else:
-            raise e
+    except Exception as err:
+        logger.exception(err)
+        raise err
 
     return result_content
 
 
-async def a_get_intent_from_enriched_query(question: str, 
+async def a_get_intent_from_enriched_query(question: str,
                                            prompt_data: PromptEditorResponseBody,
                                             logger: Logger) -> ClassifyIntentResponse:
     settings = get_openai_settings()
@@ -184,7 +181,7 @@ async def a_get_intent_from_enriched_query(question: str,
         "question": question
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
-    
+
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable]
     value_parameters = [question]
@@ -192,9 +189,9 @@ async def a_get_intent_from_enriched_query(question: str,
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
     prompt_messages = build_prompt_messages(resolved_jinja_prompt)
-    
+
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
-    
+
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
                           azure_deployment=settings.completion_deployment_model,
                           api_version=settings.api_version,
@@ -203,7 +200,7 @@ async def a_get_intent_from_enriched_query(question: str,
                           max_tokens=prompt_data.model_parameters.max_length,
                           timeout=30)
 
-    chain = prompt | llm.with_retry() 
+    chain = prompt | llm.with_retry()
 
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
@@ -216,19 +213,24 @@ async def a_get_intent_from_enriched_query(question: str,
     logger.track_event(event_types.llm_intent_classification_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
-    
-    logger.track_event(event_types.llm_intent_classification_response,
-                       {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
-    
-    result_content_parser = PydanticOutputParser(
-        pydantic_object=ClassifyIntentResponse)
-    result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+    try:
+        prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
+        logger.track_event(event_types.llm_intent_classification_response,
+                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
+
+        result_content_parser = PydanticOutputParser(
+            pydantic_object=ClassifyIntentResponse)
+        result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+
+    except Exception as err:
+        logger.exception(err)
+        raise err
+    
     return result_content
 
 
-async def a_get_answer_from_domus(question: str, 
+async def a_get_answer_from_domus(question: str,
                                   practice_detail: str,
                                     prompt_data: PromptEditorResponseBody,
                                     logger: Logger) -> DomusAnswerResponse:
@@ -239,7 +241,7 @@ async def a_get_answer_from_domus(question: str,
         "practice_detail": practice_detail
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
-    
+
     # Check prompt parameter on prompt data
     fixed_parameters = [llm_const.question_variable, llm_const.practice_detail_variable]
     value_parameters = [question, practice_detail]
@@ -247,9 +249,9 @@ async def a_get_answer_from_domus(question: str,
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 
     prompt_messages = build_prompt_messages(resolved_jinja_prompt)
-    
+
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
-    
+
     llm = AzureChatOpenAI(azure_endpoint=settings.completion_endpoint,
                           azure_deployment=settings.completion_deployment_model,
                           api_version=settings.api_version,
@@ -258,7 +260,7 @@ async def a_get_answer_from_domus(question: str,
                           max_tokens=prompt_data.model_parameters.max_length,
                           timeout=30)
 
-    chain = prompt | llm.with_retry() 
+    chain = prompt | llm.with_retry()
 
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode('utf-8'),
@@ -270,15 +272,19 @@ async def a_get_answer_from_domus(question: str,
     }
     logger.track_event(event_types.llm_domus_answer_generation_request,
                        data_to_log)
+    try:
+        prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
-    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
+        logger.track_event(event_types.llm_domus_answer_generation_response,
+                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
+
+        result_content_parser = PydanticOutputParser(
+            pydantic_object=DomusAnswerResponse)
+        result_content = await result_content_parser.ainvoke(prompt_and_model_result)
     
-    logger.track_event(event_types.llm_domus_answer_generation_response,
-                       {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
-    
-    result_content_parser = PydanticOutputParser(
-        pydantic_object=DomusAnswerResponse)
-    result_content = await result_content_parser.ainvoke(prompt_and_model_result)
+    except Exception as err:
+        logger.exception(err)
+        raise err
 
     return result_content
 
@@ -288,7 +294,7 @@ async def a_resolve_template(logger: Logger, prompt_data: PromptEditorResponseBo
     prompt_variables = []
     for m in messages:
         resolved_message = await a_get_prompt_from_resolve_jinja_template_api(logger, m.content, template_context)
-        logger.track_event(event_types.resolve_template_api_response, 
+        logger.track_event(event_types.resolve_template_api_response,
                            {
                                "promptId": prompt_data.id,
                                "message_role": m.role,

@@ -37,24 +37,27 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
     endpoint = settings.editor_endpoint + f"/{promptId}"
     if (version != None and version != ""):
         endpoint = settings.editor_endpoint + f"/{promptId}/{version}"
-    # headers = {'Content-Type': 'application/json',
-    #            'x-functions-key': settings.editor_api_key}
+
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
                misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
-    async with session.get(endpoint,
-                           headers=headers) as result:
-        result_json = await result.json()
-        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
-        track_event_data = {
-            "request_endpoint": endpoint,
-            "prompt_id": promptId,
-            "prompt_version": version,
-            "response": result_json_string
-        }
-        logger.track_event(event_types.get_prompts_result,
-                           track_event_data)
+    try:
+        async with session.post(endpoint,
+                                data= "{}",
+                            headers=headers) as result:
+            result_json = await result.json()
+            result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
+            track_event_data = {
+                "request_endpoint": endpoint,
+                "prompt_id": promptId,
+                "prompt_version": version,
+                "response": result_json_string
+            }
+            logger.track_event(event_types.get_prompts_result,
+                            track_event_data)
+    except Exception as err:
+            raise Exception(f"API: {endpoint} "  + err.args[0])        
 
-        return PromptEditorResponseBody.from_dict(result_json)
+    return PromptEditorResponseBody.from_dict(result_json)
 
 @retry(
     retry=retry_if_http_error(),
@@ -105,18 +108,25 @@ async def a_get_response_from_prompts_api(logger: Logger,
     
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
             misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
-    async with session.post(endpoint,
-                            data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
-                            headers=headers) as result:
-        result_json = await result.json()
-        result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
-        track_event_data = {
-            "request_endpoint": endpoint,
-            "response": result_json_string
-        }
-        logger.track_event(event_types.prompts_api_result_response, track_event_data)
-
+    async with aiohttp.ClientSession() as sessionClient:
+        async with sessionClient.post(endpoint,
+                                data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
+                                headers=headers) as result:
+            result_json = await result.json()
+            result_json_string = json.dumps(result_json, ensure_ascii=False).encode('utf-8')
+            if result.status == 200:
+                track_event_data = {
+                    "request_endpoint": endpoint,
+                    "response": result_json_string
+                }
+                logger.track_event(event_types.prompts_api_result_response, track_event_data)
+            else:
+                error_message = result_json_string.decode("utf-8")
+                logger.exception(error_message)
+                raise Exception(f"API: {endpoint} "  + error_message)
     return result_json
+
+
 
 async def a_get_enrichment_prompt_data(prompt_editor: list[PromptEditorCredential],
                                        logger: Logger,
@@ -186,9 +196,9 @@ async def a_get_prompt_from_resolve_jinja_template_api(logger: Logger,
                 logger.track_event(event_types.resolve_template_api_request, track_event_data)
                 result_object = TemplateResolveResponse.from_dict(result_json)
             else:
-                error_message = result_json_string
+                error_message = result_json_string.decode("utf-8")
                 logger.exception(error_message)
-                raise Exception(error_message)
+                raise Exception(f"API: {resolve_endpoint} "  + error_message)
 
     return result_object
 

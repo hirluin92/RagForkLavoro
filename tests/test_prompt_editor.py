@@ -38,7 +38,7 @@ async def test_a_get_response_from_prompt_retrieval_api(monkeypatch):
 
     })
     
-    mock_session.get.return_value.__aenter__.return_value = mock_response
+    mock_session.post.return_value.__aenter__.return_value = mock_response
     
     # Mock del logger
     mock_logger = MagicMock(spec=Logger)
@@ -54,7 +54,7 @@ async def test_a_get_response_from_prompt_retrieval_api(monkeypatch):
     assert response.model_parameters.top_p == 0.9  # Verifica se model_parameters è correttamente mappato
 
 @pytest.mark.asyncio
-async def test_a_get_prompts_data(monkeypatch):
+async def test_a_get_prompts_data(mocker, monkeypatch):
     set_mock_env(monkeypatch)
     #  mock credenziali per prompt type
     mock_prompt_editor = [
@@ -67,6 +67,7 @@ async def test_a_get_prompts_data(monkeypatch):
     ]
     
     # Mock del ClientSession
+
     mock_session = AsyncMock(spec=ClientSession)
     
     # risposta HTTP dummy con 4 elementi, uno per ciascun prompt type atteso
@@ -121,6 +122,7 @@ async def test_a_get_prompts_data(monkeypatch):
     # Mock del logger
     mock_logger = MagicMock(spec=Logger)
     
+    mocker.patch("services.prompt_editor.a_get_response_from_prompts_api", return_value = dummy_response_list )
     # test
     response = await a_get_prompts_data(mock_prompt_editor, mock_list_prompt_version_info, mock_logger, mock_session)
     
