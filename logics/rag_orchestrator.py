@@ -14,7 +14,7 @@ from models.apis.rag_orchestrator_response import EventMonitorFormApplication
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 from models.configurations.clog import CLog, CLogParams, CLogSettings
 from models.configurations.prompt import PromptSettings
-from models.services.mssql_tag import EnumMonitoringQuestion, MsSqlTag
+from models.services.mssql_tag import EnumMonitorFormApplication, MsSqlTag
 from services.cqa import a_do_query as cqa_do_query
 from services.logging import Logger
 from services.prompt_editor import a_get_prompts_data, a_get_form_application_name_by_tag
@@ -39,7 +39,11 @@ async def a_get_query_response(request: RagOrchestratorRequest,
         raise Exception(f"No tags {request.tags} found.")
 
     tag_info = tags_info[0]
-    tag_info.desc_monitoring_question = EnumMonitoringQuestion.get_enum_name(tag_info.id_monitoring_question)
+    tag_info.id_monitoring_question = request.configuration.id_monitor_form_app_integration if request.configuration and request.configuration.id_monitor_form_app_integration else tag_info.id_monitoring_question
+    tag_info.desc_monitoring_question = EnumMonitorFormApplication.get_enum_name(tag_info.id_monitoring_question)
+
+    tag_info.enable_cqa = True if request.configuration and request.configuration.enable_cqa or ((request.configuration == None or request.configuration.enable_cqa == None) and tag_info.enable_cqa) else False
+    tag_info.enable_enrichment = True if request.configuration and request.configuration.enable_enrichment or ((request.configuration == None or request.configuration.enable_enrichment == None) and tag_info.enable_enrichment) else False
 
     if tag_info.enable_cqa:
         #CQA service response with original query
@@ -71,6 +75,8 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     #Get AI service (OpenAI or Mistral)
     language_service = AiQueryServiceFactory.get_instance(request.llm_model_id)
 
+    enriched_query = EnrichmentQueryResponse(standalone_question=request.query)
+    
     if tag_info.enable_enrichment:
     #Compute enrichment
         enriched_query = await language_service.a_do_query_enrichment(request, enrichment_prompt_data, logger)
@@ -83,7 +89,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                     None,
                                     None)
 
-    if tag_info.enable_enrichment and tag_info.enable_cqa:
+    if tag_info.enable_cqa and tag_info.enable_enrichment:
         #CQA service response with query enriched
         if enriched_query.standalone_question != request.query:
             request.query = enriched_query.standalone_question
@@ -99,7 +105,9 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                         cqa_result.cqa_data,
                                         None)
     
-    if tag_info.id_monitoring_question == EnumMonitoringQuestion.OnlyRag.value or request.disable_mst_integration:
+    monitor_form_app_history = next((interaction for interaction in request.interactions if interaction.type == monitor_form_app.type), None)
+    
+    if tag_info.id_monitoring_question == EnumMonitorFormApplication.OnlyRag.value or monitor_form_app_history:
         return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
     
     result = await check_msd_question(request, 
@@ -109,11 +117,11 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                     language_service,
                     enriched_query,
                     completion_prompt_data,
-                    tag_info.id_monitoring_question,
+                    tag_info,
                     logger,
                     session)
     
-    if tag_info.id_monitoring_question == EnumMonitoringQuestion.Rag_MonitoringQuestion.value and (result is None or (result.monitor_form_application is None and result.clog is not None)):
+    if tag_info.id_monitoring_question == EnumMonitorFormApplication.Rag_MonitoringQuestion.value and (result is None or (result.monitor_form_application is None and result.clog is not None)):
         return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=getattr(result, 'clog', None)) 
     
     return result
@@ -146,16 +154,12 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     language_service: AiQueryServiceFactory,
                     enriched_query: EnrichmentQueryResponse,
                     completion_prompt_data: PromptEditorResponseBody,
-                    id_monitoring_question: int,
+                    tag_info: MsSqlTag,
                     logger: Logger,
                     session: ClientSession) -> RagOrchestratorResponse:
 
     if msd_intent_recognition_prompt_data == None:
         raise Exception("No msd_intent_recognition_prompt_data found.")
-        
-    # If the tag application is disabled for "monitoring the application status" integration, the rag will directly response
-    if await a_check_status_tag_for_mst(logger, tag, False):
-        return None
         
     # Intent recognition
     intent_prompt_data = msd_intent_recognition_prompt_data
@@ -274,7 +278,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         clog_last_status.ret_code=0
         clog_last_status.err_desc=None
         
-        if id_monitoring_question == EnumMonitoringQuestion.OnlyMonitoringQuestion.value:
+        if tag_info.id_monitoring_question == EnumMonitorFormApplication.OnlyMonitoringQuestion.value:
             return RagOrchestratorResponse("", "", None, "", 
                                         MonitorFormApplication(answer_text=monitor_form_app.default_answer, event_type=EventMonitorFormApplication.show_answer_text),
                                         clog_last_status)

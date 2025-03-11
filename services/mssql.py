@@ -14,7 +14,6 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     ,EnableCQA
     ,EnableEnrichment
     ,IdMonitoringQuestion
-    ,EnableMonitoringQuestion
     FROM [dbo].[Tags]
     WHERE [Name] IN ({tags_filter})
     """ 
@@ -33,8 +32,7 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
                         r.Description, 
                         r.EnableCQA,
                         r.EnableEnrichment,
-                        r.IdMonitoringQuestion,
-                        r.EnableMonitoringQuestion))
+                        r.IdMonitoringQuestion))
 
     logger.info(f"after a_get_tags_by_tag_names")
     return tags_to_return

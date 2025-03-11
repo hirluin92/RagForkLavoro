@@ -1,3 +1,4 @@
+import json
 from logging import Logger
 from aiohttp import ClientSession
 from constants import event_types
@@ -37,8 +38,6 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                 result_json = await result.json()
                 result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
 
-                # result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code 
-                #                     and (domanda.statoDomanda.stato is None or domanda.statoDomanda.stato == request.form_application_status)]
                 result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
 
                 logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_response, {"response": "OK"})
@@ -47,7 +46,6 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
 async def a_get_form_application_details(request: DomusFormApplicationDetailsRequest,
                                           session: ClientSession,
                                           logger: Logger,) -> DomusFormAapplicationDetailsResponse:
-
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}?numeroDomus={request.domus_number}&lingua={request.language.upper()}&progressivoIstanza={request.progressivo_istanza}"
 
