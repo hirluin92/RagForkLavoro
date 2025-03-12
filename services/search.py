@@ -72,20 +72,24 @@ async def a_query(session: ClientSession,
 
     data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     endpoint: str = settings.endpoint + "/indexes/" + index + "/docs/search"
-    async with session.post(endpoint,
-                                data=data, 
-                                headers=headers, 
-                                params=params) as result:
-        result_json = await result.json()
-        track_event_data = {
-            "requestPayload": json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        }
-        values_to_log: list = result_json.get('value', [])
-        index=0
-        for value in values_to_log:
-            track_event_data["resultDocument_" + str(index).zfill(2)] = json.dumps(value, ensure_ascii=False).encode('utf-8')
-            index+=1
-        logger.track_event(event_types.search_results_received_event,
-                        track_event_data)
+    try:
+        async with session.post(endpoint,
+                                    data=data, 
+                                    headers=headers, 
+                                    params=params) as result:
+            result_json = await result.json()
+            track_event_data = {
+                "requestPayload": json.dumps(payload, ensure_ascii=False).encode('utf-8')
+            }
+            values_to_log: list = result_json.get('value', [])
+            index=0
+            for value in values_to_log:
+                track_event_data["resultDocument_" + str(index).zfill(2)] = json.dumps(value, ensure_ascii=False).encode('utf-8')
+                index+=1
+            logger.track_event(event_types.search_results_received_event,
+                            track_event_data)
 
-        return SearchIndexResponse.from_dict(result_json)
+            return SearchIndexResponse.from_dict(result_json)
+    except Exception as ex:
+        logger.exception(ex)
+        raise ex   

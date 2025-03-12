@@ -2,6 +2,7 @@ import json
 import os
 from unittest.mock import AsyncMock, MagicMock
 import azure.functions as func
+from pydantic import ValidationError
 import pytest
 import logics
 from tests.mock_env import set_mock_env
@@ -33,6 +34,27 @@ from utils.settings import (
     get_search_settings,
     get_storage_settings
 )
+
+
+@pytest.mark.asyncio
+async def test_query_no_configuration(mocker, monkeypatch):
+    # Arrange
+    set_mock_env(monkeypatch)
+    set_mock_logger_builder(mocker)
+    req = func.HttpRequest(method='POST',
+                           headers={'Content-Type': 'application/json'},
+                           body=None,
+                           url='/api/ragOrchestrator')
+
+    mock_trace_context = mocker.Mock()    
+    mocker.patch('utils.settings.get_openai_settings', side_effect = ValidationError)
+
+    # Act
+    func_call = ragOrchestrator_endpoint.build().get_user_function()
+    response = await func_call(req, mock_trace_context)
+    
+    # Assert
+    assert response.status_code == 500
 
 
 @pytest.mark.asyncio

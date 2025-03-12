@@ -36,7 +36,9 @@ async def a_split_text_into_chunks(value: ValueFromAzAISearch,
         blob_filename = blob_info[1]
         blob_text = await a_get_blob_content_from_container(container, blob_filename)
         blob_text = re.sub(r'\r\n|\r', '\n', blob_text)
-        splittedText = re.split(r'[\s\t]*\n[\s\t]*\n[\s\t]*\n', blob_text)
+        # Regex pattern to match 3 empty rows with at most 10 spaces or tabs between the empty lines
+        pattern = r'[\s\t]{0,10}\n[\s\t]{0,10}\n[\s\t]{0,20}\n'
+        splittedText = re.split(pattern, blob_text)
         stripped_chunks = [item.strip() for item in splittedText]
         print(len(stripped_chunks))
         propertiesDict = {"fileUrl": value.data.fileUrl,

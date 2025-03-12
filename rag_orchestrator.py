@@ -57,15 +57,6 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                 json_content = json.dumps(
                     query_response, ensure_ascii=False, default=lambda x: x.__dict__).encode('utf-8')
 
-                # Log statistici
-                # response_source = ""
-                # if query_response.cqa_data:
-                #     response_source = "CQA"
-                # elif query_response.llm_data:
-                #     response_source = "LLM"
-                # else:
-                #     response_source = "Undefined"
-
                 logger.track_event(event_types.rag_orchestrator_performed_event,
                                    {
                                        "response-body": json_content,

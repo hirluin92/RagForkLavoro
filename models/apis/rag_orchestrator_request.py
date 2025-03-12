@@ -1,10 +1,12 @@
 from typing import Optional
 from pydantic import BaseModel
-    
+
+
 class Interaction(BaseModel):
     question: str
     answer: str
     type: Optional[str] = None
+
 
 class PromptEditorCredential(BaseModel):
     type: str
@@ -18,11 +20,13 @@ class RagConfiguration(BaseModel):
     enable_enrichment: Optional[bool] = True
     
 
+
 class RagOrchestratorRequest(BaseModel):
-    query: str  
-    llm_model_id: str  
+    query: str
+    lang: Optional[str] = "it"
+    llm_model_id: str
     tags: list[str] = []
-    interactions: list[Interaction]  = []
+    interactions: list[Interaction] = []
     environment: str = "production"
     prompts: list[PromptEditorCredential] = []
     token: Optional[str] = None
