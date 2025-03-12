@@ -105,7 +105,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                         cqa_result.cqa_data,
                                         None)
     
-    monitor_form_app_history = next((interaction for interaction in request.interactions if interaction.type == monitor_form_app.type), None)
+    monitor_form_app_history = next((interaction for interaction in request.interactions if interaction.type.lower() == monitor_form_app.type), None)
     
     if tag_info.id_monitoring_question == EnumMonitorFormApplication.OnlyRag.value or monitor_form_app_history:
         return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session) 
