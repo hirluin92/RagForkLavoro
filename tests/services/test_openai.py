@@ -4,11 +4,14 @@ from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody, OpenAIModelParameters
+from models.apis.prompt_template_response_body import TemplateResolveResponse
 from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context,
     a_get_answer_from_domus,
     a_get_enriched_query as openai_get_enriched_query,
-    a_get_intent_from_enriched_query
+    a_get_intent_from_enriched_query,
+    a_resolve_template,
+    check_prompt_variables
     )
 from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
@@ -194,6 +197,51 @@ async def test_get_answer_from_domus(mocker,
     # Assert
     assert result.answer == "Sospesa"
 
+@pytest.mark.asyncio 
+async def test_a_resolve_template(mocker, monkeypatch):
+    # Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = MockLogger()
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
+    mock_template_data = {}
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=[],
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
+    mock_resolve_template = TemplateResolveResponse(resolved_template="text resolved",
+                                                    parameters=[],
+                                                    validation_messages=[]) 
+    mocker.patch(
+        "services.openai.a_get_prompt_from_resolve_jinja_template_api",
+        return_value=mock_resolve_template
+    )
+    # Act
+    result = await a_resolve_template(mock_logger,
+                                    mock_prompt_data,
+                                    mock_template_data)
 
-    
-    
+    # Assert
+    assert result.llm_model == "OPENAI"
+
+def test_check_prompt_variables(mocker):
+    #Arrange
+    mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
+    mock_prompt_data = PromptEditorResponseBody(version = '1',
+                                                    llm_model='OPENAI',
+                                                    prompt = [],
+                                                    parameters=["topic", "chat"],
+                                                    model_parameters= mock_model_parameters,
+                                                    id = "guid",
+                                                    label = "tag",
+                                                    validation_messages=[])
+    fixed_params= ["question", "topic"]
+
+    # Act
+    result = check_prompt_variables(mock_prompt_data, fixed_params)
+
+    #Assert
+    assert len(result) == 1

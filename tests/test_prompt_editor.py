@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 import json
 from aiohttp import ClientSession, ClientResponse
-from services.prompt_editor import a_get_prompts_data
+from services.prompt_editor import a_get_completion_prompt_data, a_get_enrichment_prompt_data, a_get_prompts_data
 from services.prompt_editor import a_get_response_from_prompt_retrieval_api, PromptEditorResponseBody
 from services.logging import Logger
 from tests.mock_env import set_mock_env
@@ -123,6 +123,7 @@ async def test_a_get_prompts_data(mocker, monkeypatch):
     mock_logger = MagicMock(spec=Logger)
     
     mocker.patch("services.prompt_editor.a_get_response_from_prompts_api", return_value = dummy_response_list )
+    
     # test
     response = await a_get_prompts_data(mock_prompt_editor, mock_list_prompt_version_info, mock_logger, mock_session)
     
@@ -137,3 +138,57 @@ async def test_a_get_prompts_data(mocker, monkeypatch):
     assert completion_response.label == "completion"
     assert msd_intent_response.label == "msd_intent_recognition"
     assert msd_completion_response.label == "msd_completion"
+
+@pytest.mark.asyncio
+async def test_a_get_enrichment_prompt_data(mocker, monkeypatch):
+    #Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = mocker.Mock()
+    mock_client = mocker.Mock()
+    mock_prompt_editor = [
+        MagicMock(type="msd_intent_recognition", id="123", version="v1", label="msd_intent_recognition"),
+        MagicMock(type="enrichment", id="789", version="v3", label="enrichment"),
+        MagicMock(type="msd_completion", id="999", version="v4", label="msd_completion")
+    ]
+    prompt_response_mock =PromptEditorResponseBody(id="guid", 
+                                                   label="enrichment", 
+                                                   version="1.0", 
+                                                   llm_model="OPENAI",
+                                                    prompt=[],
+                                                    parameters=[],
+                                                    model_parameters=MagicMock(),
+                                                    validation_messages=[])
+    mocker.patch("services.prompt_editor.a_get_response_from_prompt_retrieval_api", return_value = prompt_response_mock)
+
+    #Act
+    result = await a_get_enrichment_prompt_data(mock_prompt_editor, mock_logger, mock_client)
+
+    #Assert
+    assert result.label == 'enrichment'
+
+@pytest.mark.asyncio
+async def test_a_get_completion_prompt_data(mocker, monkeypatch):
+    #Arrange
+    set_mock_env(monkeypatch)
+    mock_logger = mocker.Mock()
+    mock_client = mocker.Mock()
+    mock_prompt_editor = [
+        MagicMock(type="msd_intent_recognition", id="123", version="v1", label="msd_intent_recognition"),
+        MagicMock(type="completion", id="789", version="v3", label="enrichment"),
+        MagicMock(type="msd_completion", id="999", version="v4", label="msd_completion")
+    ]
+    prompt_response_mock =PromptEditorResponseBody(id="guid", 
+                                                   label="completion", 
+                                                   version="1.0", 
+                                                   llm_model="OPENAI",
+                                                    prompt=[],
+                                                    parameters=[],
+                                                    model_parameters=MagicMock(),
+                                                    validation_messages=[])
+    mocker.patch("services.prompt_editor.a_get_response_from_prompt_retrieval_api", return_value = prompt_response_mock)
+
+    #Act
+    result = await a_get_completion_prompt_data(mock_prompt_editor, mock_logger, mock_client)
+
+    #Assert
+    assert result.label == 'completion'
