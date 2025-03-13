@@ -24,7 +24,7 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
                             logger: Logger) -> EnrichmentQueryResponse:
         # Creazione chat history
         chat_history = self.extract_chat_history(request.interactions)
-        topic = await self.get_topic_from_tags(request.tags)
+        topic = await self.get_topic_from_tags(logger, request.tags)
         query_enrichment_result = await a_get_enriched_query(request.query,
                                                      topic,
                                                      chat_history,
