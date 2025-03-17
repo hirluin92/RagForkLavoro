@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import json
 from aiohttp import ClientResponseError, ClientSession
 from constants import clog, event_types, monitor_form_app
@@ -26,9 +27,10 @@ from utils import string
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
             session: ClientSession) -> RagOrchestratorResponse:
-    # workaround for content filter:
     
     request.query = f"{request.query}. {request.text_by_card}." if request.text_by_card != None and len(request.text_by_card) > 0 else request.query
+    
+    # workaround for content filter:
     request.query = request.query.lower()
 
     tag = request.tags[0]
@@ -39,11 +41,22 @@ async def a_get_query_response(request: RagOrchestratorRequest,
         raise Exception(f"No tags {request.tags} found.")
 
     tag_info = tags_info[0]
+    
+    logger.track_event(event_types.rag_orchestrator_tag_info_by_db,
+                               {
+                                   "tag_info":  json.dumps(asdict(tag_info), ensure_ascii=False).encode('utf-8')
+                               })
+    
     tag_info.id_monitoring_question = request.configuration.id_monitor_form_app_integration if request.configuration and request.configuration.id_monitor_form_app_integration else tag_info.id_monitoring_question
     tag_info.desc_monitoring_question = EnumMonitorFormApplication.get_enum_name(tag_info.id_monitoring_question)
 
     tag_info.enable_cqa = True if request.configuration and request.configuration.enable_cqa or ((request.configuration == None or request.configuration.enable_cqa == None) and tag_info.enable_cqa) else False
     tag_info.enable_enrichment = True if request.configuration and request.configuration.enable_enrichment or ((request.configuration == None or request.configuration.enable_enrichment == None) and tag_info.enable_enrichment) else False
+
+    logger.track_event(event_types.rag_orchestrator_tag_info_by_request,
+                            {
+                                "tag_info":  json.dumps(asdict(tag_info), ensure_ascii=False).encode('utf-8')
+                            })
 
     if tag_info.enable_cqa:
         #CQA service response with original query
@@ -218,7 +231,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 clog_last_status.err_desc=None
                 return RagOrchestratorResponse("", "", None, "", 
                                             MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
-                                                event_type=EventMonitorFormApplication.show_answer_list), clog_last_status)
+                                                event_type=EventMonitorFormApplication.show_answer_list), clog_last_status,)
             else: 
                 user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == str(intent_result.numero_domus[0])), None)
         else:   
