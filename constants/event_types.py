@@ -33,3 +33,5 @@ llm_domus_answer_generation_request = "LLMDomusAnswerRequest"
 llm_domus_answer_generation_response = "LLMDomusAnswerResponse",
 resolve_template_api_request = "ResolveTemplateAPIRequest"
 resolve_template_api_response = "ResolveTemplateAPIResponse"
+rag_orchestrator_tag_info_by_db = "RagOrchestratorTagInfoByDb"
+rag_orchestrator_tag_info_by_request = "RagOrchestratorTagInfoByRequest"

@@ -5,12 +5,20 @@ from pydantic import BaseModel
 class Interaction(BaseModel):
     question: str
     answer: str
+    type: Optional[str] = None
 
 
 class PromptEditorCredential(BaseModel):
     type: str
     id: str
     version: Optional[str] = None
+    
+class RagConfiguration(BaseModel):
+    id_monitor_form_app_integration: Optional[int] = False
+    desc_monitor_form_app_integration: Optional[str] = None
+    enable_cqa: Optional[bool] = True
+    enable_enrichment: Optional[bool] = True
+    
 
 
 class RagOrchestratorRequest(BaseModel):
@@ -24,4 +32,4 @@ class RagOrchestratorRequest(BaseModel):
     token: Optional[str] = None
     user_fiscal_code: Optional[str] = None
     text_by_card: Optional[str] = None
-    disable_mst_integration: Optional[bool] = False
+    configuration: Optional[RagConfiguration] = None
