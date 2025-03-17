@@ -93,9 +93,12 @@ class FakeCursor:
 
 class FakeRecord:
     """Record fittizio per a_get_tags_by_tag_names: deve avere attributi 'Name' e 'Description'."""
-    def __init__(self, name, description):
+    def __init__(self, name, description, EnableCQA, EnableEnrichment, IdMonitoringQuestion):
         self.Name = name
         self.Description = description
+        self.EnableCQA = EnableCQA
+        self.EnableEnrichment = EnableEnrichment
+        self.IdMonitoringQuestion = IdMonitoringQuestion
 
 class FakePromptRecord:
     """
@@ -118,8 +121,8 @@ async def test_a_get_tags_by_tag_names(monkeypatch):
 
     # Prepara dei fake record da restituire tramite fetchall()
     fake_records = [
-        FakeRecord("tag1", "desc1"),
-        FakeRecord("tag2", "desc2")
+        FakeRecord("tag1", "desc1", True, True, 1),
+        FakeRecord("tag2", "desc2", True, True, 1)
     ]
     fake_cursor = FakeCursor(fetchall_return=fake_records)
     # Sostituisce create_pool con il nostro fake (verrà usato nel context manager)
@@ -137,8 +140,8 @@ async def test_a_get_tags_by_tag_names(monkeypatch):
     from models.services.mssql_tag import MsSqlTag
     # Crea il risultato atteso
     expected = [
-        MsSqlTag("tag1", "desc1"),
-        MsSqlTag("tag2", "desc2")
+        MsSqlTag("tag1", "desc1", True, True, 1),
+        MsSqlTag("tag2", "desc2", True, True, 1)
     ]
 
     # Verifica che il numero di elementi e i relativi attributi siano corretti.

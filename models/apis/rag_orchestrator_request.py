@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class Interaction(BaseModel):
     question: str
     answer: str
-    type: Optional[str] = None
+    type: Optional[str] = "rag"
 
 
 class PromptEditorCredential(BaseModel):

@@ -11,9 +11,9 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     sql_query = f"""
     SELECT [Name]
     ,[Description]
-    ,EnableCQA
-    ,EnableEnrichment
-    ,IdMonitoringQuestion
+    ,[EnableCQA]
+    ,[EnableEnrichment]
+    ,[IdMonitoringQuestion]
     FROM [dbo].[Tags]
     WHERE [Name] IN ({tags_filter})
     """ 
