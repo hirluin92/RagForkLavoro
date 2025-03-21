@@ -18,7 +18,7 @@ from services.cqa import a_do_query as cqa_do_query
 from services.logging import Logger
 from services.prompt_editor import a_get_prompts_data, a_get_form_application_name_by_tag
 from services import openai
-from services.mssql import a_get_prompt_info, a_check_status_tag_for_mst
+from services.mssql import a_get_prompt_info, a_check_status_tag_for_msd
 from services import domus
 from utils import string
 
@@ -45,7 +45,7 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     prompt_type_filter = [llm_const.completion, llm_const.enrichment,
                           llm_const.msd_completion, llm_const.msd_intent_recognition]
 
-    list_prompt_version_info = await a_get_prompt_info(logger, tag, prompt_type_filter)
+    list_prompt_version_info = await a_get_prompt_info(logger, tag, prompt_type_filter, request.llm_model_id)
 
     # API get prompts
     (enrichment_prompt_data,
@@ -147,7 +147,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         raise Exception("No msd_intent_recognition_prompt_data found.")
 
     # If the tag application is disabled for "monitoring the application status" integration, the rag will directly response
-    if await a_check_status_tag_for_mst(logger, tag, False):
+    if await a_check_status_tag_for_msd(logger, tag) == 0:
         return None
 
     # Intent recognition

@@ -54,7 +54,7 @@ async def a_get_answer_from_context(question: str, lang: str,
                         api_key=settings.key,
                         model_name=settings.model,
                         temperature=prompt_data.model_parameters.temperature,
-                        max_tokens=2000) # FIX: RIMUOVERE
+                        max_tokens=prompt_data.model_parameters.max_length)
 
     chain = prompt | llm.with_retry()
 
@@ -167,8 +167,20 @@ async def a_get_intent_from_enriched_query(question: str,
                                            prompt_data: PromptEditorResponseBody,
                                            logger: Logger) -> ClassifyIntentResponse:
     settings = get_mistralai_settings()
+    template_data = {
+        "question": question
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
 
-    prompt_messages = build_prompt_messages(prompt_data)
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable]
+    value_parameters = [question]
+    variables_indices = check_prompt_variables(
+        resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {
+        fixed_parameters[i]: value_parameters[i] for i in variables_indices}
+
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
 
     # Check prompt parameter on prompt messages
     parameters = [f"{{{llm_const.question_variable}}}"]
@@ -201,8 +213,7 @@ async def a_get_intent_from_enriched_query(question: str,
     logger.track_event(event_types.llm_intent_classification_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke({
-        llm_const.question_variable: question})
+    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
     logger.track_event(event_types.llm_intent_classification_response,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})
@@ -224,12 +235,23 @@ async def a_get_answer_from_domus(question: str,
 
     # Check prompt parameter on prompt messages
     parameters = [f"{{{llm_const.question_variable}}}"]
-    check = check_prompt_variable(prompt_messages, parameters)
-    if not check:
-        err_code = llm_const.status_code_var_domus
-        mex = "Invalid domus answer prompt parameters"
-        custom_err = CustomPromptParameterError(mex, err_code)
-        raise custom_err
+
+    template_data = {
+        "question": question,
+        "practice_detail": practice_detail
+    }
+    resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
+
+    # Check prompt parameter on prompt data
+    fixed_parameters = [llm_const.question_variable,
+                        llm_const.practice_detail_variable]
+    value_parameters = [question, practice_detail]
+    variables_indices = check_prompt_variables(
+        resolved_jinja_prompt, fixed_parameters)
+    dict_langchain_variables = {
+        fixed_parameters[i]: value_parameters[i] for i in variables_indices}
+
+    prompt_messages = build_prompt_messages(resolved_jinja_prompt)
 
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
 
@@ -254,9 +276,7 @@ async def a_get_answer_from_domus(question: str,
     logger.track_event(event_types.llm_domus_answer_generation_request,
                        data_to_log)
 
-    prompt_and_model_result = await chain.ainvoke({
-        llm_const.question_variable: question,
-        llm_const.practice_detail_variable: practice_detail})
+    prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
     logger.track_event(event_types.llm_domus_answer_generation_response,
                        {"answer": prompt_and_model_result.json(ensure_ascii=False).encode('utf-8')})

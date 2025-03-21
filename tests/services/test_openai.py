@@ -3,6 +3,7 @@ import pytest
 from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
+from constants import llm
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody, OpenAIModelParameters
 from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context,
@@ -36,7 +37,7 @@ async def test_openai_get_answer_from_context(mocker,
     mock_logger = MockLogger()
     mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
     mock_prompt_data = PromptEditorResponseBody(version = '1',
-                                                    llm_model='OPENAI',
+                                                    llm_model=llm.openai,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= mock_model_parameters,

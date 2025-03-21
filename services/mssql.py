@@ -5,6 +5,7 @@ from models.apis.rag_orchestrator_request import PromptEditorCredential
 from models.services.mssql_tag import MsSqlTag
 from utils.settings import get_mssql_settings
 
+
 async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[MsSqlTag]:
     settings = get_mssql_settings()
     tags_filter = ",".join(["'" + str(x) + "'" for x in tag_names])
@@ -13,10 +14,10 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     ,[Description]
     FROM [dbo].[Tags]
     WHERE [Name] IN ({tags_filter})
-    """ 
+    """
     tags_to_return: list[MsSqlTag] = []
     logger.info(f"before a_get_tags_by_tag_names")
-    
+
     async with create_pool(dsn=settings.connection_string, minsize=1) as pool:
         async with pool.acquire() as conn:
             logger.info(f"connection established")
@@ -30,21 +31,22 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     return tags_to_return
 
 
-async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str]) -> list[PromptEditorCredential]:
+async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str], llm_id: str) -> list[PromptEditorCredential]:
     logger.info("before a_get_prompt_info")
     settings = get_mssql_settings()
-    
+
     async with create_pool(dsn=settings.connection_string, minsize=1) as pool:
         async with pool.acquire() as conn:
             logger.info("connection established")
             async with conn.cursor() as cursor:
                 # Trasmormo l'array in una lista di valori separati da rigola
-                type_filters_str = ','.join(f"{type_}" for type_ in type_filters)
-                
+                type_filters_str = ','.join(
+                    f"{type_}" for type_ in type_filters)
+
                 sql_query = f"""
                 WITH FilteredRows AS (
                     SELECT 
-                        ID,
+                        PromptDetails.ID,
                         PromptId,
                         PromptVersion,
                         PromptType,
@@ -57,8 +59,10 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                                 ELSE 3
                             END
                         ) AS RowNum
-                    FROM PromptDetails
+                    FROM PromptDetails JOIN
+                    Llms ON PromptDetails.LlmId = Llms.Id
                     WHERE PromptType IN (SELECT value FROM STRING_SPLIT('{type_filters_str}', ','))
+                    AND Llms.Code = ?
                 )
                 SELECT 
                     PromptId, PromptVersion, PromptType
@@ -67,10 +71,10 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                 WHERE 
                     RowNum = 1;
                 """
-                
+
                 # Eseguo...
-                await cursor.execute(sql_query, (tag_name))
-                
+                await cursor.execute(sql_query, tag_name, llm_id)
+
                 # Itera sui risultati e costruisce la lista da restituire
                 prompt_version_infos = []
                 async for record in cursor:
@@ -81,23 +85,24 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                             type=record.PromptType,
                         )
                     )
-                
+
                 logger.info("after a_get_prompt_info")
                 return prompt_version_infos
 
-async def a_check_status_tag_for_mst(logger: Logger, tag_name: str, status: bool) -> bool:
+
+async def a_check_status_tag_for_msd(logger: Logger, tag_name: str) -> int:
     settings = get_mssql_settings()
     sql_query = f"""
-    SELECT EnableMonitoringQuestion
+    SELECT IdMonitoringQuestion
     FROM [dbo].[Tags]
-    WHERE [Name] = '{tag_name}' AND [EnableMonitoringQuestion] = {int(status)}
-    """ 
+    WHERE [Name] = '{tag_name}'
+    """
     logger.info(f"before a_check_status_tag_for_mst")
     async with create_pool(dsn=settings.connection_string, minsize=1) as pool:
         async with pool.acquire() as conn:
-                logger.info(f"connection established")
-                async with conn.cursor() as cursor:
-                    await cursor.execute(sql_query)
-                    records = await cursor.fetchall()
-                    logger.info(f"after a_check_status_tag_for_mst")
-                    return len(records) > 0
+            logger.info(f"connection established")
+            async with conn.cursor() as cursor:
+                await cursor.execute(sql_query)
+                records = await cursor.fetchall()
+                logger.info(f"after a_check_status_tag_for_mst")
+                return records[0].IdMonitoringQuestion

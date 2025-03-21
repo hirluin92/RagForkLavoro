@@ -1,6 +1,7 @@
 import json
 import azure.functions as func
 import pytest
+import constants
 from tests.mock_env import set_mock_env
 from logics.rag_query import (
     build_question_context_from_search,
@@ -211,7 +212,7 @@ async def test_execute_query_mistralai_ok(mocker,monkeypatch):
     set_mock_env(monkeypatch)
     mock_logger = MockLogger()
     mock_prompt_data = PromptEditorResponseBody(version = '1',
-                                                    llm_model='MISTRALAI',
+                                                    llm_model=llm_const.mistralai,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= None,
@@ -265,7 +266,7 @@ async def test_execute_query_openai_ok(mocker,monkeypatch):
     set_mock_env(monkeypatch)
     mock_logger = MockLogger()
     mock_prompt_data = PromptEditorResponseBody(version = '1',
-                                                    llm_model='OPENAI',
+                                                    llm_model=llm_const.openai,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= None,

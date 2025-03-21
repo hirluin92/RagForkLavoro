@@ -8,8 +8,10 @@ from types import SimpleNamespace
 # Fake classes per simulare il comportamento di aioodbc
 # ---------------------------------------
 
+
 class FakePoolContextManager:
     """Simula il context manager restituito da create_pool."""
+
     def __init__(self, fake_cursor):
         self.fake_cursor = fake_cursor
 
@@ -19,16 +21,20 @@ class FakePoolContextManager:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
+
 class FakePool:
     """Simula il pool (il quale ha il metodo acquire())."""
+
     def __init__(self, fake_cursor):
         self.fake_cursor = fake_cursor
 
     def acquire(self):
         return FakeConnectionContextManager(self.fake_cursor)
 
+
 class FakeConnectionContextManager:
     """Simula il context manager restituito dal metodo acquire()."""
+
     def __init__(self, fake_cursor):
         self.fake_cursor = fake_cursor
 
@@ -38,16 +44,20 @@ class FakeConnectionContextManager:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
+
 class FakeConnection:
     """Simula la connessione (il quale ha il metodo cursor())."""
+
     def __init__(self, fake_cursor):
         self.fake_cursor = fake_cursor
 
     def cursor(self):
         return FakeCursorContextManager(self.fake_cursor)
 
+
 class FakeCursorContextManager:
     """Simula il context manager per il cursore."""
+
     def __init__(self, fake_cursor):
         self.fake_cursor = fake_cursor
 
@@ -57,6 +67,7 @@ class FakeCursorContextManager:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
+
 class FakeCursor:
     """
     Fake del cursore usato per:
@@ -64,6 +75,7 @@ class FakeCursor:
       - simulare il fetchall() (per a_get_tags_by_tag_names e a_check_status_tag_for_mst)
       - oppure l'iterazione asincrona (per a_get_prompt_info)
     """
+
     def __init__(self, fetchall_return=None, iter_records=None):
         self.fetchall_return = fetchall_return
         self.iter_records = iter_records if iter_records is not None else []
@@ -73,6 +85,11 @@ class FakeCursor:
     async def execute(self, sql, params=None):
         self.executed_sql = sql
         self.executed_params = params
+        
+    async def execute(self, sql, params=None, params2=None):
+        self.executed_sql = sql
+        self.executed_params = params
+        self.executed_params2 = params2
 
     async def fetchall(self):
         return self.fetchall_return or []
@@ -91,16 +108,20 @@ class FakeCursor:
 # Fake record classes per simulare le righe ritornate dal database
 # ---------------------------------------
 
+
 class FakeRecord:
     """Record fittizio per a_get_tags_by_tag_names: deve avere attributi 'Name' e 'Description'."""
+
     def __init__(self, name, description):
         self.Name = name
         self.Description = description
+
 
 class FakePromptRecord:
     """
     Record fittizio per a_get_prompt_info: deve avere attributi PromptId, PromptVersion e PromptType.
     """
+
     def __init__(self, prompt_id, prompt_version, prompt_type):
         self.PromptId = prompt_id
         self.PromptVersion = prompt_version
@@ -110,11 +131,14 @@ class FakePromptRecord:
 # Test per a_get_tags_by_tag_names
 # ---------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_a_get_tags_by_tag_names(monkeypatch):
     # Simula le impostazioni MSSQL
-    dummy_settings = SimpleNamespace(connection_string="dummy_connection_string")
-    monkeypatch.setattr("services.mssql.get_mssql_settings", lambda: dummy_settings)
+    dummy_settings = SimpleNamespace(
+        connection_string="dummy_connection_string")
+    monkeypatch.setattr("services.mssql.get_mssql_settings",
+                        lambda: dummy_settings)
 
     # Prepara dei fake record da restituire tramite fetchall()
     fake_records = [
@@ -123,7 +147,8 @@ async def test_a_get_tags_by_tag_names(monkeypatch):
     ]
     fake_cursor = FakeCursor(fetchall_return=fake_records)
     # Sostituisce create_pool con il nostro fake (verrà usato nel context manager)
-    monkeypatch.setattr("services.mssql.create_pool", lambda dsn, minsize: FakePoolContextManager(fake_cursor))
+    monkeypatch.setattr("services.mssql.create_pool", lambda dsn,
+                        minsize: FakePoolContextManager(fake_cursor))
 
     # Creiamo un logger (qui viene usato solo per loggare)
     import logging
@@ -151,10 +176,13 @@ async def test_a_get_tags_by_tag_names(monkeypatch):
 # Test per a_get_prompt_info
 # ---------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_a_get_prompt_info(monkeypatch):
-    dummy_settings = SimpleNamespace(connection_string="dummy_connection_string")
-    monkeypatch.setattr("services.mssql.get_mssql_settings", lambda: dummy_settings)
+    dummy_settings = SimpleNamespace(
+        connection_string="dummy_connection_string")
+    monkeypatch.setattr("services.mssql.get_mssql_settings",
+                        lambda: dummy_settings)
 
     # Prepara dei fake record con PromptId come stringa
     fake_records = [
@@ -162,15 +190,14 @@ async def test_a_get_prompt_info(monkeypatch):
         FakePromptRecord("102", "v2", "typeB")
     ]
     fake_cursor = FakeCursor(iter_records=fake_records)
-    monkeypatch.setattr("services.mssql.create_pool", lambda dsn, minsize: FakePoolContextManager(fake_cursor))
+    monkeypatch.setattr("services.mssql.create_pool", lambda dsn,
+                        minsize: FakePoolContextManager(fake_cursor))
 
     import logging
     logger = logging.getLogger("test_a_get_prompt_info")
 
     from services.mssql import a_get_prompt_info
-    result = await a_get_prompt_info(logger, "some_tag", ["filter1", "filter2"])
-
-    from models.apis.rag_orchestrator_request import PromptEditorCredential
+    result = await a_get_prompt_info(logger, "some_tag", ["filter1", "filter2"], "OPENAI")
 
     assert len(result) == 2
     assert result[0].id == "101"
@@ -190,38 +217,26 @@ async def test_a_get_prompt_info(monkeypatch):
 # Test per a_check_status_tag_for_mst (caso in cui la query ritorna record, quindi True)
 # ---------------------------------------
 
-@pytest.mark.asyncio
-async def test_a_check_status_tag_for_mst_true(monkeypatch):
-    dummy_settings = SimpleNamespace(connection_string="dummy_connection_string")
-    monkeypatch.setattr("services.mssql.get_mssql_settings", lambda: dummy_settings)
 
+@pytest.mark.asyncio
+async def test_a_check_status_tag_for_mst(monkeypatch):
+    dummy_settings = SimpleNamespace(
+        connection_string="dummy_connection_string")
+    monkeypatch.setattr("services.mssql.get_mssql_settings",
+                        lambda: dummy_settings)
+
+    class FakeRecord:
+        def __init__(self, id):
+            self.IdMonitoringQuestion = id
     # Simula fetchall() che restituisce una lista non vuota (ad esempio [object()])
-    fake_cursor = FakeCursor(fetchall_return=[object()])
-    monkeypatch.setattr("services.mssql.create_pool", lambda dsn, minsize: FakePoolContextManager(fake_cursor))
+    fake_cursor = FakeCursor(fetchall_return=[FakeRecord(1)])
+    monkeypatch.setattr("services.mssql.create_pool", lambda dsn,
+                        minsize: FakePoolContextManager(fake_cursor))
 
     import logging
     logger = logging.getLogger("test_a_check_status_tag_for_mst_true")
 
-    from services.mssql import a_check_status_tag_for_mst
-    result = await a_check_status_tag_for_mst(logger, "tag_test", True)
-    assert result is True
+    from services.mssql import a_check_status_tag_for_msd
+    result = await a_check_status_tag_for_msd(logger, "tag_test")
+    assert result == 1
 
-# ---------------------------------------
-# Test per a_check_status_tag_for_mst (caso in cui la query non ritorna record, quindi False)
-# ---------------------------------------
-
-@pytest.mark.asyncio
-async def test_a_check_status_tag_for_mst_false(monkeypatch):
-    dummy_settings = SimpleNamespace(connection_string="dummy_connection_string")
-    monkeypatch.setattr("services.mssql.get_mssql_settings", lambda: dummy_settings)
-
-    # Simula fetchall() che restituisce una lista vuota
-    fake_cursor = FakeCursor(fetchall_return=[])
-    monkeypatch.setattr("services.mssql.create_pool", lambda dsn, minsize: FakePoolContextManager(fake_cursor))
-
-    import logging
-    logger = logging.getLogger("test_a_check_status_tag_for_mst_false")
-
-    from services.mssql import a_check_status_tag_for_mst
-    result = await a_check_status_tag_for_mst(logger, "tag_test", False)
-    assert result is False
