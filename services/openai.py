@@ -1,5 +1,6 @@
 from dataclasses import asdict
 import json
+from models.apis.rag_orchestrator_request import Interaction
 from services.logging import Logger
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
@@ -36,7 +37,8 @@ async def a_generate_embedding_from_text(text: str):
 async def a_get_answer_from_context(question: str, lang: str,
                                     context: List[LlmContextContent],
                                     prompt_data: PromptEditorResponseBody,
-                                    logger: Logger) -> RagResponse:
+                                    logger: Logger,
+                                    interactions: str) -> RagResponse:
     """
     Get an answer from a context
     """
@@ -47,13 +49,14 @@ async def a_get_answer_from_context(question: str, lang: str,
     template_data = {
         "documents": context_json_string,
         "question": question,
-        "lang": lang
+        "lang": lang,
+        "chat_history": interactions
     }
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
 
     # Check prompt parameter on prompt data
-    fixed_parameters = [llm_const.question_variable, llm_const.context_variable]
-    value_parameters = [question, context_json_string]
+    fixed_parameters = [llm_const.question_variable, llm_const.context_variable, llm_const.chat_variable]
+    value_parameters = [question, context_json_string, interactions]
     variables_indices = check_prompt_variables(resolved_jinja_prompt, fixed_parameters)
     dict_langchain_variables = {fixed_parameters[i]: value_parameters[i] for i in variables_indices}
 

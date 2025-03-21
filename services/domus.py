@@ -1,6 +1,7 @@
 import json
 from logging import Logger
 from aiohttp import ClientSession
+from tenacity import retry, stop_after_attempt, wait_exponential
 from constants import event_types
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
 from models.apis.domus_form_application_details_response import DomusFormAapplicationDetailsResponse
@@ -9,8 +10,14 @@ from models.apis.domus_form_applications_by_fiscal_code_response import  DomusFo
 from constants import misc as misc_const
 from models.configurations.domus import DomusApiSettings
 import ssl
+from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
 
-
+@retry(
+    retry=retry_if_http_error(),
+    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
+    stop=stop_after_attempt(3),
+    reraise=True
+)
 async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsByFiscalCodeRequest,
                                           session: ClientSession,
                                           logger: Logger) -> DomusFormApplicationsByFiscalCodeResponse:
@@ -43,6 +50,12 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                 logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_response, {"response": "OK"})
                 return result_obj
     
+@retry(
+    retry=retry_if_http_error(),
+    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
+    stop=stop_after_attempt(3),
+    reraise=True
+)
 async def a_get_form_application_details(request: DomusFormApplicationDetailsRequest,
                                           session: ClientSession,
                                           logger: Logger,) -> DomusFormAapplicationDetailsResponse:

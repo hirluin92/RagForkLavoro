@@ -31,9 +31,9 @@ class DomusFormAapplicationDetailsResponse(BaseModel):
     #prodotto: Optional[str]
     #nomeCompleto: Optional[str] = None
     #dataPresentazione: Optional[int]
-    #numeroDomus: Optional[str]
+    numeroDomus: Optional[str]
     #progressivoIstanza: Optional[int]
-    #numeroProtocollo: Optional[str]
+    numeroProtocollo: Optional[str]
     #siglaPatronato: Optional[str]
     #modalitaPresentazione: Optional[str]
     listaStati: Optional[List[ListaStati]]= None

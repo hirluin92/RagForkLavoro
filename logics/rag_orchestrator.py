@@ -14,6 +14,7 @@ from models.apis.rag_orchestrator_response import MonitorFormApplication
 from models.apis.rag_orchestrator_response import EventMonitorFormApplication
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 from models.configurations.clog import CLog, CLogParams, CLogSettings
+from models.configurations.msd import MsdSettings
 from models.configurations.prompt import PromptSettings
 from models.services.mssql_tag import EnumMonitorFormApplication, MsSqlTag
 from services.cqa import a_do_query as cqa_do_query
@@ -192,6 +193,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
     prompt_settings = PromptSettings()
     (domus_form_application_code, domus_form_application_name) = await a_get_form_application_name_by_tag(prompt_settings.config_container, tag, logger)
     
+    msd_settings = MsdSettings()
     clog_settings = CLogSettings()
     clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag)
     clog_last_status = CLog(ret_code=200, err_desc=None, id_event=clog_settings.msd_elencodomande, params=clog_params)
@@ -223,7 +225,26 @@ async def check_msd_question(request: RagOrchestratorRequest,
         
         clog_last_status.err_desc=clog.DOMUSAPIOKLISTEMPTY
         if list_forms is None or not list_forms.listaDomande:
-            return RagOrchestratorResponse("", "", None, "", None, clog_last_status)
+            return RagOrchestratorResponse("", "", None, "", 
+                                           MonitorFormApplication(answer_text=msd_settings.no_form_app_def_answer, 
+                                                                  event_type=EventMonitorFormApplication.show_answer_text), 
+                                           clog_last_status)
+            
+        if intent_result.numero_protocollo:
+            if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_protocollo[0] in domanda.numeroProtocollo), None):
+                # return risposta statica
+                return RagOrchestratorResponse("", "", None, "", 
+                                               MonitorFormApplication(answer_text=msd_settings.no_form_app_def_answer, 
+                                                                      event_type=EventMonitorFormApplication.show_answer_text), 
+                                               clog_last_status)
+                
+        if intent_result.numero_domus:
+            if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_domus[0] in domanda.numeroDomus), None):
+                # return risposta statica
+                return RagOrchestratorResponse("", "", None, "", 
+                                               MonitorFormApplication(answer_text=msd_settings.no_form_app_def_answer, 
+                                                                      event_type=EventMonitorFormApplication.show_answer_text), 
+                                               clog_last_status)
             
         if len(list_forms.listaDomande) > 1:
             if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
@@ -233,7 +254,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                             MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
                                                 event_type=EventMonitorFormApplication.show_answer_list), clog_last_status,)
             else: 
-                user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == str(intent_result.numero_domus[0])), None)
+                user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
         else:   
             user_form_application = list_forms.listaDomande[0]
             
