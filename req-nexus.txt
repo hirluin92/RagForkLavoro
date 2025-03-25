@@ -99,3 +99,4 @@ wrapt==1.16.0
 yarl==1.9.4
 zipp==3.19.2
 azure-identity==1.16.0
+redis==5.2.1
