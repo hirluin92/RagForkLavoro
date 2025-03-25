@@ -5,6 +5,7 @@ from models.configurations.mistralai import MistralAISettings
 from models.configurations.mssql import MsSqlSettings
 from models.configurations.openai import OpenAISettings
 from models.configurations.prompt import PromptSettings
+from models.configurations.redis import RedisSettings
 from models.configurations.search import SearchSettings
 from models.configurations.storage import BlobStorageSettings
 
@@ -40,3 +41,7 @@ def get_storage_settings():
 @lru_cache
 def get_prompt_settings():
     return PromptSettings()
+
+@lru_cache
+def get_redis_settings():
+    return RedisSettings()
