@@ -6,7 +6,7 @@ from services.domus import a_get_form_applications_by_fiscal_code, a_get_form_ap
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
-from models.apis.domus_form_application_details_response import DomusFormAapplicationDetailsResponse
+from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
 from models.configurations.domus import DomusApiSettings
 from tests.mock_env import set_mock_env
 from tests.mock_logging import set_mock_logger_builder
@@ -116,5 +116,5 @@ async def test_a_get_form_application_details(mocker, monkeypatch):
     response = await a_get_form_application_details(request, mock_session, mock_logger)
     
     # Assert
-    assert isinstance(response, DomusFormAapplicationDetailsResponse)
+    assert isinstance(response, DomusFormApplicationDetailsResponse)
     mock_logger.track_event.assert_called()

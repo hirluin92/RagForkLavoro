@@ -48,6 +48,7 @@ async def test_openai_get_answer_from_context(mocker,
                                                     validation_messages=[])
     # Sample question and context
     question = "What is the capital of France?"
+    interactions = []
     lang = "en"
     mock_context = mocker.Mock()
     mock_context.chunk_id = "id"
@@ -74,7 +75,8 @@ async def test_openai_get_answer_from_context(mocker,
     result = await openai_get_answer_from_context(question, lang,
                                             context,
                                             mock_prompt_data,
-                                            mock_logger)
+                                            mock_logger,
+                                            interactions)
 
     # Assert
     assert result.response == "Paris"

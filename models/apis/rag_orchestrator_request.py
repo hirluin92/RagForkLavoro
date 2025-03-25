@@ -33,3 +33,4 @@ class RagOrchestratorRequest(BaseModel):
     user_fiscal_code: Optional[str] = None
     text_by_card: Optional[str] = None
     configuration: Optional[RagConfiguration] = None
+    conversation_id: Optional[str] = None

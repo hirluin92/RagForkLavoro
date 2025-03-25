@@ -27,7 +27,7 @@ class Adempimenti(BaseModel):
     descrizione: Optional[str]= None
     dataAdempimento: Optional[int]= None
 
-class DomusFormAapplicationDetailsResponse(BaseModel):
+class DomusFormApplicationDetailsResponse(BaseModel):
     #prodotto: Optional[str]
     #nomeCompleto: Optional[str] = None
     #dataPresentazione: Optional[int]

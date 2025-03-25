@@ -745,7 +745,9 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
     mock_language_service.a_compute_classify_intent_query = mocker.AsyncMock(
         return_value=mocker.Mock(
             intent="verifica_stato", 
-            stato_domanda=["IN_CORSO"]
+            stato_domanda=["IN_CORSO"],
+            numero_protocollo=["PROT123"],
+            numero_domus=["PROT123"]
         )
     )
     
@@ -755,9 +757,9 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
     mock_domus_response.messaggioErrore = ""
     mock_domus_response.listaDomande = [
         mocker.Mock(
-            numeroDomus="123",
             progressivoIstanza="1",
-            numeroProtocollo="PROT123"
+            numeroProtocollo="PROT123",
+            numeroDomus="PROT123"
         )
     ]
     
