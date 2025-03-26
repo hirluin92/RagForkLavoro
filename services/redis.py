@@ -10,8 +10,8 @@ _redis_instance = Redis(host=settings.host, password=settings.password,
 
 
 def get_from_redis(key: str) -> Optional[str]:
-    return _redis_instance.get(key)
+    return _redis_instance.get(key.lower())
 
 
 def set_to_redis(key: str, value: str):
-    _redis_instance.set(key, value, ex=settings.expiration_seconds)
+    _redis_instance.set(key.lower(), value, ex=settings.expiration_seconds)

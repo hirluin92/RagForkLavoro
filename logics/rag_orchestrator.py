@@ -181,6 +181,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
 
     redis = False
     wrong_input = False
+    redisCache = None
     
     msd_settings = MsdSettings()
     clog_settings = CLogSettings()
@@ -190,7 +191,11 @@ async def check_msd_question(request: RagOrchestratorRequest,
     
     # recupera cache redis
     # redis service
-    redisCache = await redisService.get_from_redis(request.conversation_id)
+    if not request.conversation_id: 
+        logger.exception('request.conversation_id is null')
+    else:
+        redisCache = redisService.get_from_redis(request.conversation_id)
+    
     if not redisCache:
         if msd_intent_recognition_prompt_data == None:
             raise Exception("No msd_intent_recognition_prompt_data found.")
@@ -318,8 +323,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 return RagOrchestratorResponse("", "", None, "", None, clog_last_status)
                 
             # save into redis
-            if not redis:
-                await redisService.set_to_redis(request.conversation_id, str(form_application_details.model_dump()))
+            if request.conversation_id and not redis:
+                redisService.set_to_redis(request.conversation_id, form_application_details.model_dump_json())
             
         except Exception as e:
             logger.exception(e)
@@ -331,7 +336,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                             clog_last_status)
     else:
         # get details from redis
-        form_application_details = redisCache
+        
+        form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=form_application_details.numeroDomus, 
@@ -342,7 +348,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         if msd_completion_prompt_data == None:
                 raise Exception("No enrichment_prompt_data found.")
 
-        domus_result = await language_service.a_get_domus_answer(request, str(form_application_details.model_dump()), msd_completion_prompt_data, logger)
+        domus_result = await language_service.a_get_domus_answer(request, form_application_details.model_dump_json(), msd_completion_prompt_data, logger)
 
         if domus_result:
             if domus_result.has_answer and domus_result.answer:

@@ -41,7 +41,6 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
         logger.exception(ex)
         raise ex
 
-
 async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str], llm_id: str) -> list[PromptEditorCredential]:
     logger.info("before a_get_prompt_info")
     settings = get_mssql_settings()
@@ -51,9 +50,8 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                 logger.info("connection established")
                 async with conn.cursor() as cursor:
                     # Trasmormo l'array in una lista di valori separati da rigola
-                    type_filters_str = ','.join(
-                        f"{type_}" for type_ in type_filters)
-
+                    type_filters_str = ','.join(f"{type_}" for type_ in type_filters)
+                    
                     sql_query = f"""
                     WITH FilteredRows AS (
                         SELECT 
@@ -82,10 +80,10 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                     WHERE 
                         RowNum = 1;
                     """
-
+                    
                     # Eseguo...
                     await cursor.execute(sql_query, tag_name, llm_id)
-
+                    
                     # Itera sui risultati e costruisce la lista da restituire
                     prompt_version_infos = []
                     async for record in cursor:
@@ -96,15 +94,14 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                                 type=record.PromptType,
                             )
                         )
-
+                    
                     logger.info("after a_get_prompt_info")
                     return prompt_version_infos
     except Exception as ex:
-            logger.exception(ex)
-            raise ex
+        logger.exception(ex)
+        raise ex
 
-
-async def a_check_status_tag_for_msd(logger: Logger, tag_name: str) -> int:
+async def a_check_status_tag_for_mst(logger: Logger, tag_name: str, status: bool) -> bool:
     settings = get_mssql_settings()
     sql_query = f"""
     SELECT IdMonitoringQuestion
