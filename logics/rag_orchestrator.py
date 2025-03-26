@@ -27,6 +27,7 @@ from services.mssql import a_get_prompt_info, a_check_status_tag_for_mst, a_get_
 from services import domus
 from services import storage
 from utils import string
+from services import redis as redisService
 
 async def a_get_query_response(request: RagOrchestratorRequest,
             logger: Logger,
@@ -187,7 +188,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
     
     # recupera cache redis
     # redis service
-    if not redis:
+    redisCache = await redisService.get_from_redis(request.conversation_id)
+    if not redisCache:
         if msd_intent_recognition_prompt_data == None:
             raise Exception("No msd_intent_recognition_prompt_data found.")
             
@@ -313,9 +315,9 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 clog_last_status.err_desc=clog.DOMUSAPIOKDETAILEMPTY
                 return RagOrchestratorResponse("", "", None, "", None, clog_last_status)
                 
-            # # save into redis
-            # if not redis:
-            #     c = 1
+            # save into redis
+            if not redis:
+                await redisService.set_to_redis(request.conversation_id, str(form_application_details.model_dump()))
             
         except Exception as e:
             logger.exception(e)
@@ -327,42 +329,53 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                             clog_last_status)
     else:
         # get details from redis
-        form_application_details = DomusFormApplicationDetailsResponse()
+        form_application_details = redisCache
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=form_application_details.numeroDomus, 
                                     num_prot=form_application_details.numeroProtocollo)
         clog_last_status = CLog(ret_code=200, err_desc=None, id_event=clog_settings.msd_dettagliodomande, params=clog_params)
     
-    
-    if msd_completion_prompt_data == None:
+    try:
+        if msd_completion_prompt_data == None:
                 raise Exception("No enrichment_prompt_data found.")
 
-    domus_result = await language_service.a_get_domus_answer(request, str(form_application_details.model_dump()), msd_completion_prompt_data, logger)
+        domus_result = await language_service.a_get_domus_answer(request, str(form_application_details.model_dump()), msd_completion_prompt_data, logger)
 
-    if domus_result:
-        if domus_result.has_answer and domus_result.answer:
-            clog_last_status.ret_code=0
-            clog_last_status.err_desc=None
-            if wrong_input and (request.text_by_card is None or request.text_by_card.strip() == ''):
-                return RagOrchestratorResponse("", "", None, "", MonitorFormApplication(
-                    answer_text=f'{msd_settings.no_spec_form_app_show_text} {domus_result.answer}',
-                    event_type=EventMonitorFormApplication.show_answer_text),
-                                    clog_last_status)
-            else:
-                return RagOrchestratorResponse("", "", None, "", MonitorFormApplication(
-                    answer_text=domus_result.answer,
-                    event_type=EventMonitorFormApplication.show_answer_text),
-                                    clog_last_status)
-    
-    clog_last_status.ret_code=0
-    clog_last_status.err_desc=None
-    
-    if tag_info.id_monitoring_question == EnumMonitorFormApplication.OnlyMonitoringQuestion.value:
+        if domus_result:
+            if domus_result.has_answer and domus_result.answer:
+                clog_last_status.ret_code=0
+                clog_last_status.err_desc=None
+                if wrong_input and (request.text_by_card is None or request.text_by_card.strip() == ''):
+                    return RagOrchestratorResponse("", "", None, "", MonitorFormApplication(
+                        answer_text=f'{msd_settings.no_spec_form_app_show_text} {domus_result.answer}',
+                        event_type=EventMonitorFormApplication.show_answer_text),
+                                        clog_last_status)
+                else:
+                    return RagOrchestratorResponse("", "", None, "", MonitorFormApplication(
+                        answer_text=domus_result.answer,
+                        event_type=EventMonitorFormApplication.show_answer_text),
+                                        clog_last_status)
+        
+        clog_last_status.ret_code=0
+        clog_last_status.err_desc=None
+        
+        if tag_info.id_monitoring_question == EnumMonitorFormApplication.OnlyMonitoringQuestion.value:
+            return RagOrchestratorResponse("", "", None, "", 
+                                        MonitorFormApplication(answer_text=monitor_form_app.default_answer, event_type=EventMonitorFormApplication.show_answer_text),
+                                        clog_last_status)
+        
+        return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, 
+                                domusData=str(form_application_details.model_dump()),
+                                clog=clog_last_status)
+        
+    except Exception as e:
+        logger.exception(e)
+        clog_last_status.ret_code=500
+        clog_last_status.err_desc=clog.DOMUSGENERALAPPLICATIONERROR
+        
         return RagOrchestratorResponse("", "", None, "", 
-                                    MonitorFormApplication(answer_text=monitor_form_app.default_answer, event_type=EventMonitorFormApplication.show_answer_text),
-                                    clog_last_status)
+                                        MonitorFormApplication(event_type=EventMonitorFormApplication.application_error),
+                                        clog_last_status)
     
-    return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, 
-                            domusData=str(form_application_details.model_dump()),
-                            clog=clog_last_status)
+    
