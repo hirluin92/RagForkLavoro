@@ -11,7 +11,7 @@ from models.apis.rag_query_response_body import RagQueryResponse
 
 from models.services.openai_domus_response import DomusAnswerResponse
 from models.services.openai_intent_response import ClassifyIntentResponse
-from services.mistralai import a_get_enriched_query
+from services.mistralai import a_get_answer_from_domus, a_get_enriched_query, a_get_intent_from_enriched_query
 
 class AiQueryServiceMistralAI(AiQueryServiceBase):
 
@@ -24,7 +24,7 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
                             logger: Logger) -> EnrichmentQueryResponse:
         # Creazione chat history
         chat_history = self.extract_chat_history(request.interactions)
-        topic = await self.get_topic_from_tags(request.tags)
+        topic = await self.get_topic_from_tags(logger, request.tags)
         query_enrichment_result = await a_get_enriched_query(request.query,
                                                      topic,
                                                      chat_history,
@@ -45,9 +45,11 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
         return query_result
     
     async def a_compute_classify_intent_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
-                            logger: Logger) -> ClassifyIntentResponse:
-        return None
+                            logger: Logger) -> ClassifyIntentResponse: 
+         result = await a_get_intent_from_enriched_query(request.query, prompt_data, logger)
+         return result
     
     async def a_get_domus_answer(self, request: RagOrchestratorRequest, practice_detail: str, prompt_data: PromptEditorResponseBody,
                             logger: Logger) -> DomusAnswerResponse:
-        return None
+         result = await a_get_answer_from_domus(request.query, practice_detail, prompt_data, logger)
+         return result

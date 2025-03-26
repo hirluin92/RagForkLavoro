@@ -75,23 +75,24 @@ async def a_get_query_response(request: RagOrchestratorRequest,
     
     prompt_type_filter = [llm_const.completion, llm_const.enrichment, llm_const.msd_completion, llm_const.msd_intent_recognition]
 
-    list_prompt_version_info = await a_get_prompt_info(logger, tag, prompt_type_filter)
+    list_prompt_version_info = await a_get_prompt_info(logger, tag, prompt_type_filter, request.llm_model_id)
 
-    #API get prompts
-    (enrichment_prompt_data, 
-    completion_prompt_data, 
-    msd_intent_recognition_prompt_data,
-    msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
+    # API get prompts
+    (enrichment_prompt_data,
+     completion_prompt_data,
+     msd_intent_recognition_prompt_data,
+     msd_completion_prompt_data) = await a_get_prompts_data(request.prompts, list_prompt_version_info, logger, session)
 
     if enrichment_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
 
-    #Verify llm model id request and prompts model from editor
-    if(request.llm_model_id != enrichment_prompt_data.llm_model or 
-       request.llm_model_id != completion_prompt_data.llm_model):
-            raise Exception("The request llm model id  is different from prompt editor llm model.")
-    
-    #Get AI service (OpenAI or Mistral)
+    # Verify llm model id request and prompts model from editor
+    if (request.llm_model_id != enrichment_prompt_data.llm_model or
+            request.llm_model_id != completion_prompt_data.llm_model):
+        raise Exception(
+            "The request LLM model ID is different from Prompt Editor LLM model.")
+
+    # Get AI service (OpenAI or Mistral)
     language_service = AiQueryServiceFactory.get_instance(request.llm_model_id)
 
     enriched_query = EnrichmentQueryResponse(standalone_question=request.query)
@@ -144,22 +145,23 @@ async def a_get_query_response(request: RagOrchestratorRequest,
         return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, clog=getattr(result, 'clog', None)) 
     
     return result
-    
-async def a_do_query(request: RagOrchestratorRequest, 
-                     completion_prompt_data: PromptEditorResponseBody, 
+
+
+async def a_do_query(request: RagOrchestratorRequest,
+                     completion_prompt_data: PromptEditorResponseBody,
                      language_service: AiQueryServiceFactory,
                      enriched_query: EnrichmentQueryResponse,
                      logger: Logger,
                      session: ClientSession,
-                     clog : CLog = None,
+                     clog: CLog = None,
                      domusData: str = None) -> RagOrchestratorResponse:
-    
+
     if completion_prompt_data == None:
         raise Exception("No enrichment_prompt_data found.")
-    
-    #Compute completion
+
+    # Compute completion
     rag_query_result = await language_service.a_do_query(request, completion_prompt_data, logger, session, domusData)
-    
+
     return RagOrchestratorResponse(rag_query_result.response,
                                 enriched_query.standalone_question,
                                 None,
