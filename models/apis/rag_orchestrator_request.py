@@ -16,8 +16,8 @@ class PromptEditorCredential(BaseModel):
 class RagConfiguration(BaseModel):
     id_monitor_form_app_integration: Optional[int] = False
     desc_monitor_form_app_integration: Optional[str] = None
-    enable_cqa: Optional[bool] = True
-    enable_enrichment: Optional[bool] = True
+    enable_cqa: Optional[bool] = None
+    enable_enrichment: Optional[bool] = None
     
 
 
