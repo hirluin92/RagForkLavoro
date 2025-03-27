@@ -1,8 +1,9 @@
 import pytest
-from models.apis.convert_docx_to_md_response_body import ValueToAzAISearch, DataToAzAISearch
+
+from models.apis.convert_docx_to_md_response_body import DataToAzAISearch, ValueToAzAISearch
 
 
-def test_value_to_azai_search_initialization():
+def test_value_to_docx_search_initialization():
     # Arrange
     record_id = "12345"
     data = DataToAzAISearch(content="Sample content")
