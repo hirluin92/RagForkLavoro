@@ -1,14 +1,9 @@
 import json
 import azure.functions as func
 import pytest
-from pydantic import ValidationError
-from unittest.mock import AsyncMock
 from tests.mock_env import set_mock_env
 from tests.mock_logging import set_mock_logger_builder
-from logics.convert_docx_to_md import a_extract_hyperlink_from_files
-from utils.settings import get_storage_settings
 from convert_docx_to_md import convert_docx_to_md as convert_docx_to_md_endpoint
-from models.apis.convert_docx_to_md_request_body import ConvertDocxToMdRequestBody
 
 @pytest.mark.asyncio
 async def test_convert_docx_to_md_no_body(mocker, monkeypatch):
