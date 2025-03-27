@@ -9,4 +9,3 @@ class BlobStorageSettings(BaseSettings):
     data_source_split_files_container: str
     uploaded_files_container: str
     uploaded_split_files_container: str
-  

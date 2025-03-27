@@ -1,16 +1,23 @@
 import json
 from logging import Logger
 from aiohttp import ClientSession
+from tenacity import retry, stop_after_attempt, wait_exponential
 from constants import event_types
 from models.apis.domus_form_application_details_request import DomusFormApplicationDetailsRequest
-from models.apis.domus_form_application_details_response import DomusFormAapplicationDetailsResponse
+from models.apis.domus_form_application_details_response import DomusFormApplicationDetailsResponse
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 from models.apis.domus_form_applications_by_fiscal_code_response import  DomusFormApplicationsByFiscalCodeResponse
 from constants import misc as misc_const
 from models.configurations.domus import DomusApiSettings
 import ssl
+from utils.tenacity import retry_if_http_error, wait_for_retry_after_header
 
-
+@retry(
+    retry=retry_if_http_error(),
+    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
+    stop=stop_after_attempt(3),
+    reraise=True
+)
 async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsByFiscalCodeRequest,
                                           session: ClientSession,
                                           logger: Logger) -> DomusFormApplicationsByFiscalCodeResponse:
@@ -43,9 +50,15 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                 logger.track_event(event_types.domus_api_form_applications_by_fiscal_code_response, {"response": "OK"})
                 return result_obj
     
+@retry(
+    retry=retry_if_http_error(),
+    wait=wait_for_retry_after_header(fallback=wait_exponential(multiplier=1, min=4, max=10)),
+    stop=stop_after_attempt(3),
+    reraise=True
+)
 async def a_get_form_application_details(request: DomusFormApplicationDetailsRequest,
                                           session: ClientSession,
-                                          logger: Logger,) -> DomusFormAapplicationDetailsResponse:
+                                          logger: Logger,) -> DomusFormApplicationDetailsResponse:
         settings = DomusApiSettings()
         endpoint = f"{settings.base_url}/{settings.relative_url}/{settings.get_form_application_details_url}?numeroDomus={request.domus_number}&lingua={request.language.upper()}&progressivoIstanza={request.progressivo_istanza}"
 
@@ -66,7 +79,7 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
                                 headers=headers,
                                 ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
-                result_obj = DomusFormAapplicationDetailsResponse.model_validate(result_json)
+                result_obj = DomusFormApplicationDetailsResponse.model_validate(result_json)
 
                 logger.track_event(event_types.domus_api_form_application_details__response, {"response": "OK"})
                 return result_obj

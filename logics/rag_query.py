@@ -1,4 +1,5 @@
 import json
+import os
 from typing import List
 from aiohttp import ClientSession
 from constants import event_types
@@ -16,8 +17,27 @@ from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context)
 from services.search import a_query as query_azure_ai_search
 import constants.llm as llm_const
-from models.apis.rag_orchestrator_request import RagOrchestratorRequest
+from models.apis.rag_orchestrator_request import Interaction, RagOrchestratorRequest
 
+
+def extract_chat_history(interactions: list[Interaction]) -> str:
+
+        if not interactions or len(interactions) == 0:
+            return ""
+
+        formatted_strings = []
+
+        for interaction in interactions:
+            question = interaction.question
+            answer = interaction.answer
+            
+            formatted_strings.append(f"user: {question}")
+            formatted_strings.append(f"assistant: {answer}")
+        
+        newline = os.linesep
+        result = newline.join(formatted_strings)
+
+        return result 
 
 async def a_execute_query(request: RagOrchestratorRequest,
                         prompt_data: PromptEditorResponseBody,
@@ -42,7 +62,9 @@ async def a_execute_query(request: RagOrchestratorRequest,
                                 [],
                                 [])
 
-    response_from_llm = await a_get_response_from_llm(request.query, request.lang, search_result_context, prompt_data, logger)
+
+    interactions = extract_chat_history(request.interactions)
+    response_from_llm = await a_get_response_from_llm(request.query, request.lang, search_result_context, prompt_data, logger, interactions)
 
 
     response_for_user = build_response_for_user(response_from_llm, search_result_context)
@@ -102,7 +124,8 @@ def build_question_context_from_search(search_result: SearchIndexResponse) -> li
 async def a_get_response_from_llm(question: str, lang: str,
                           context: List[RagContextContent],
                           prompt_data: PromptEditorResponseBody,
-                          logger) -> RagResponse:
+                          logger,
+                          interactions: str) -> RagResponse:
 
     context_to_send: list[LlmContextContent] = []
     llm_model_id = prompt_data.llm_model
@@ -125,7 +148,8 @@ async def a_get_response_from_llm(question: str, lang: str,
         return await openai_get_answer_from_context(question, lang,
                                               context_to_send,
                                               prompt_data,
-                                              logger)
+                                              logger,
+                                              interactions)
 
 def build_response_for_user(rag_response: RagResponse,
                             context: list[RagContextContent]) -> tuple[str, list[str], list[int]]:

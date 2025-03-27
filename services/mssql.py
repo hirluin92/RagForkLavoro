@@ -5,6 +5,7 @@ from models.apis.rag_orchestrator_request import PromptEditorCredential
 from models.services.mssql_tag import MsSqlTag
 from utils.settings import get_mssql_settings
 
+
 async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[MsSqlTag]:
     settings = get_mssql_settings()
     tags_filter = ",".join(["'" + str(x) + "'" for x in tag_names])
@@ -16,7 +17,7 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
     ,[IdMonitoringQuestion]
     FROM [dbo].[Tags]
     WHERE [Name] IN ({tags_filter})
-    """ 
+    """
     tags_to_return: list[MsSqlTag] = []
     logger.info(f"before a_get_tags_by_tag_names")
     try:
@@ -40,7 +41,7 @@ async def a_get_tags_by_tag_names(logger: Logger, tag_names: list[str]) -> list[
         logger.exception(ex)
         raise ex
 
-async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str]) -> list[PromptEditorCredential]:
+async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[str], llm_id: str) -> list[PromptEditorCredential]:
     logger.info("before a_get_prompt_info")
     settings = get_mssql_settings()
     try:
@@ -54,7 +55,7 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                     sql_query = f"""
                     WITH FilteredRows AS (
                         SELECT 
-                            ID,
+                            PromptDetails.ID,
                             PromptId,
                             PromptVersion,
                             PromptType,
@@ -67,8 +68,10 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                                     ELSE 3
                                 END
                             ) AS RowNum
-                        FROM PromptDetails
+                        FROM PromptDetails JOIN
+                        Llms ON PromptDetails.LlmId = Llms.Id
                         WHERE PromptType IN (SELECT value FROM STRING_SPLIT('{type_filters_str}', ','))
+                        AND Llms.Code = ?
                     )
                     SELECT 
                         PromptId, PromptVersion, PromptType
@@ -79,7 +82,7 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
                     """
                     
                     # Eseguo...
-                    await cursor.execute(sql_query, (tag_name))
+                    await cursor.execute(sql_query, tag_name, llm_id)
                     
                     # Itera sui risultati e costruisce la lista da restituire
                     prompt_version_infos = []
@@ -101,10 +104,10 @@ async def a_get_prompt_info(logger: Logger, tag_name: str, type_filters: list[st
 async def a_check_status_tag_for_mst(logger: Logger, tag_name: str, status: bool) -> bool:
     settings = get_mssql_settings()
     sql_query = f"""
-    SELECT EnableMonitoringQuestion
+    SELECT IdMonitoringQuestion
     FROM [dbo].[Tags]
-    WHERE [Name] = '{tag_name}' AND [EnableMonitoringQuestion] = {int(status)}
-    """ 
+    WHERE [Name] = '{tag_name}'
+    """
     logger.info(f"before a_check_status_tag_for_mst")
     try:
         async with create_pool(dsn=settings.connection_string, minsize=1) as pool:

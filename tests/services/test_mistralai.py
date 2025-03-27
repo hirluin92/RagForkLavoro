@@ -4,6 +4,7 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 import pytest
 
 from exceptions.custom_exceptions import CustomPromptParameterError
+from constants import llm
 from models.apis.prompt_editor_response_body import OpenAIModelParameters, PromptEditorResponseBody
 from tests.mock_env import set_mock_env
 from tests.mock_logging import MockLogger
@@ -44,28 +45,42 @@ async def test_mistralai_get_answer_from_context(mocker,
     context = [mock_context]
     mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
     mock_prompt_data = PromptEditorResponseBody(version = '1',
-                                                    llm_model='OPENAI',
+                                                    llm_model=llm.mistralai,
                                                     prompt = [],
                                                     parameters=[],
                                                     model_parameters= mock_model_parameters,
                                                     id = "guid",
                                                     label = "tag",
                                                     validation_messages=[]) 
+    # Sample question and context
+    question = "What is the capital of France?"
+    lang = "en"
+    mock_context = mocker.Mock()
+    mock_context.chunk_id = "id"
+    mock_context.toJSON.return_value = "json str"
+    context = [mock_context]
+
     mocker.patch(
-        "services.mistralai.check_prompt_variable",
-        return_value=True
+        "services.mistralai.asdict"
     )
+
+    mocker.patch(
+        "services.mistralai.check_prompt_variables",
+        return_value=[0]
+    )
+
     mock_chat_prompt_template.from_messages.return_value = "Mocked Prompt"
     mock_azure_chat_mistralai.complete.return_value = True
+    mock_parser_result = mocker.Mock()
+
     mock_parser = mocker.patch.object(PydanticOutputParser, "ainvoke")
     mock_parser.response = "Paris"
     mock_parser.return_value = mock_parser
-
     # Act
     result = await mistralai_get_answer_from_context(question, lang,
-                                               context,
-                                                mock_prompt_data,
-                                               mock_logger)
+                                            context,
+                                            mock_prompt_data,
+                                            mock_logger)
 
     # Assert
     assert result.response == "Paris"

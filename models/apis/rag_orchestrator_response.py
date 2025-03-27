@@ -12,6 +12,7 @@ class EventMonitorFormApplication:
     user_no_form_application = "UserNoFormApplication"
     show_answer_text = "ShowAnswerText"
     show_answer_list = "ShowAnswerList"
+    show_answer_text_and_list = "ShowAnswerTextAndList"
     application_error= "ApplicationError"
 
 class MonitorFormApplication:
