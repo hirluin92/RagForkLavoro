@@ -13,6 +13,7 @@ from services.mistralai import (a_get_answer_from_context as mistralai_get_answe
                                 a_get_enriched_query as mistralai_get_enriched_query,
                                 a_get_answer_from_domus, a_get_intent_from_enriched_query
                                 )
+from models.services.llm_context_document import LlmContextContent
 
 @pytest.fixture
 def mock_chat_prompt_template(mocker):
@@ -217,69 +218,6 @@ async def test_get_answer_from_domus(mocker,
     # Assert
     assert result.answer == "Sospesa"
 
-
-# @pytest.mark.asyncio
-# async def test_mistralai_get_answer_from_context_custom_error(mocker,
-#                                            monkeypatch,
-#                                            mock_chat_prompt_template,
-#                                            mock_azure_chat_mistralai):
-#     # Arrange
-#     set_mock_env(monkeypatch)
-#     mock_logger = MockLogger()
-
-#     # Sample question and context
-#     question = "What is the capital of France?"
-#     lang = "en"
-#     mock_context = mocker.Mock()
-#     mock_context.chunk_id = "id"
-#     mock_context.toJSON.return_value = "json str"
-#     context = [mock_context]
-#     mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
-#     mock_prompt_data = PromptEditorResponseBody(version = '1',
-#                                                     llm_model='OPENAI',
-#                                                     prompt = [],
-#                                                     parameters=[],
-#                                                     model_parameters= mock_model_parameters,
-#                                                     id = "guid",
-#                                                     label = "tag",
-#                                                     validation_messages=[]) 
-#     mocker.patch(
-#         "services.mistralai.check_prompt_variable",
-#         return_value=False
-#     )
-
-    # # Act
-    # with pytest.raises(CustomPromptParameterError) as excinfo:
-    #     result = await mistralai_get_answer_from_context(question,
-    #                                            context,
-    #                                             mock_prompt_data,
-    #                                            mock_logger)
-    
-# @pytest.mark.asyncio
-# async def test_do_query_enrichment_custom_error(mocker,
-#                              monkeypatch,
-#                              mock_chat_prompt_template,
-#                              mock_azure_chat_mistralai):
-#     # Arrange
-#     set_mock_env(monkeypatch)
-#     mock_logger = MockLogger()
-#     mock_model_parameters = OpenAIModelParameters(0.0, 0.8, 2000, None)
-#     mock_prompt_data = PromptEditorResponseBody(version = '1',
-#                                                     llm_model='OPENAI',
-#                                                     prompt = [],
-#                                                     parameters=[],
-#                                                     model_parameters= mock_model_parameters,
-#                                                     id = "guid",
-#                                                     label = "tag",
-#                                                     validation_messages=[])
-#     mocker.patch(
-#         "services.mistralai.check_prompt_variable",
-#         return_value=False
-#     )   
-    
-#     # Act
-#     with pytest.raises(CustomPromptParameterError) as excinfo:
-#         result = await mistralai_get_enriched_query("testo di prova", ["auu"], "", mock_prompt_data, mock_logger)
 
 @pytest.mark.asyncio 
 async def test_get_intent_from_enriched_query_custom_error(mocker,

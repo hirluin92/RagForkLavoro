@@ -324,3 +324,32 @@ async def test_tagging_missing_body_data(mocker):
     #Assert
     assert response.status_code == 422
 
+
+
+@pytest.mark.asyncio
+async def test_tagging_missing_valid_body_data(mocker):
+    #Arrange
+    set_mock_logger_builder(mocker)
+    req_body = {
+        "values":[
+            {
+                "recordId":"myrecord",
+                "data": {
+                    "fileUrl": "http://localhost/file1.txt",
+                    "fileSasToken": "token"
+                }
+            }
+        ]
+    }
+    req = func.HttpRequest(method='POST',
+                        headers={'Content-Type':'application/json'},
+                        body=bytes(json.dumps(req_body), "utf-8"),
+                        url='/api/tagging')
+    mock_trace_context = mocker.Mock()
+    
+    #Act
+    func_call = metadataTagging.build().get_user_function()
+    response = await func_call(req, mock_trace_context)
+    
+    #Assert
+    assert response.status_code == 200

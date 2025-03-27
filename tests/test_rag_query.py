@@ -1,4 +1,5 @@
 import json
+import os
 import azure.functions as func
 import pytest
 import constants
@@ -6,7 +7,8 @@ from tests.mock_env import set_mock_env
 from logics.rag_query import (
     build_question_context_from_search,
     build_response_for_user,
-    a_execute_query)
+    a_execute_query,
+    extract_chat_history)
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody, PromptMessage
 from models.apis.rag_query_response_body import RagQueryResponse
 from rag_query import a_query as rag_query_endpoint
@@ -480,3 +482,64 @@ async def test_query_missing_body_value_question(mocker, monkeypatch):
     response = await func_call(req, mock_trace_context)
     # Assert
     assert response.status_code == 422
+
+    
+def test_extract_chat_history_empty_interactions():
+    # Arrange
+    interactions = []
+
+    # Act
+    result = extract_chat_history(interactions)
+
+    # Assert
+    assert result == ""
+
+def test_extract_chat_history_none_interactions():
+    # Arrange
+    interactions = None
+
+    # Act
+    result = extract_chat_history(interactions)
+
+    # Assert
+    assert result == ""
+
+def test_extract_chat_history_single_interaction(mocker):
+    # Arrange
+    mock_interaction = mocker.Mock()
+    mock_interaction.question = "What is AI?"
+    mock_interaction.answer = "AI stands for Artificial Intelligence."
+    interactions = [mock_interaction]
+
+    # Act
+    result = extract_chat_history(interactions)
+
+    # Assert
+    expected_result = "user: What is AI?" + os.linesep + "assistant: AI stands for Artificial Intelligence."
+    assert result == expected_result
+
+
+def test_extract_chat_history_multiple_interactions(mocker):
+    # Arrange
+    mock_interaction_1 = mocker.Mock()
+    mock_interaction_1.question = "What is AI?"
+    mock_interaction_1.answer = "AI stands for Artificial Intelligence."
+
+    mock_interaction_2 = mocker.Mock()
+    mock_interaction_2.question = "What is ML?"
+    mock_interaction_2.answer = "ML stands for Machine Learning."
+
+    interactions = [mock_interaction_1, mock_interaction_2]
+
+    # Act
+    result = extract_chat_history(interactions)
+
+    # Assert
+    expected_result = (
+        "user: What is AI?" + os.linesep +
+        "assistant: AI stands for Artificial Intelligence." + os.linesep +
+        "user: What is ML?" + os.linesep +
+        "assistant: ML stands for Machine Learning."
+    )
+    assert result == expected_result
+
