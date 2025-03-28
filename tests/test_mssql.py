@@ -237,7 +237,7 @@ async def test_a_check_status_tag_for_mst(monkeypatch):
     import logging
     logger = logging.getLogger("test_a_check_status_tag_for_mst_true")
 
-    from services.mssql import a_check_status_tag_for_msd
-    result = await a_check_status_tag_for_msd(logger, "tag_test")
+    from services.mssql import a_check_status_tag_for_mst
+    result = await a_check_status_tag_for_mst(logger, "tag_test", True)
     assert result == 1
 

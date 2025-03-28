@@ -9,7 +9,6 @@ import logics
 from tests.mock_env import set_mock_env
 from logics.ai_query_service_base import AiQueryServiceBase
 from logics.ai_query_service_factory import AiQueryServiceFactory
-import logics.rag_orchestrator
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagConfiguration, RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
@@ -412,7 +411,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
                                                     validation_messages=[])]
     mocker.patch('logics.rag_orchestrator.a_get_prompt_info', return_value=mock_prompt_info)
     mocker.patch('logics.rag_orchestrator.a_get_prompts_data', return_value=mock_prompt_data)
-    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_msd', return_value=2)
+    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_mst', return_value=2)
 
     mock_language_service = mocker.Mock(spec=AiQueryServiceBase)
     mock_language_service.a_do_query_enrichment.return_value = mocker.Mock(standalone_question="Cos'è l'assegno unico?",
@@ -515,7 +514,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
                                                     validation_messages=[])]
     mocker.patch('logics.rag_orchestrator.a_get_prompt_info', return_value=mock_prompt_info)
     mocker.patch('logics.rag_orchestrator.a_get_prompts_data', return_value=mock_prompt_data)
-    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_msd', return_value=0)
+    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_mst', return_value=0)
 
     mock_language_service = mocker.Mock(spec=AiQueryServiceBase)
     mock_language_service.a_do_query_enrichment.return_value = mocker.Mock(standalone_question="Cos'è l'assegno unico?",
@@ -618,7 +617,7 @@ async def test_intent_recognition_altro(mocker, monkeypatch):
     mocker.patch('logics.rag_orchestrator.a_get_prompts_data', return_value=mock_prompt_data)
     
     # Mock check status tag to return False so we continue with intent recognition
-    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_msd', return_value=2)
+    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_mst', return_value=2)
 
     # Mock enrichment response
     mock_enrichment_response = mocker.Mock(standalone_question="Test question", end_conversation=False)
@@ -716,7 +715,7 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
     
     mocker.patch('logics.rag_orchestrator.a_get_prompt_info', return_value=mock_prompt_info)
     mocker.patch('logics.rag_orchestrator.a_get_prompts_data', return_value=mock_prompt_data)
-    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_msd', return_value=1)
+    mocker.patch('logics.rag_orchestrator.a_check_status_tag_for_mst', return_value=1)
     
     # Mock the blob storage with async support
     mock_blob_client = mocker.AsyncMock()  # Usa direttamente AsyncMock
