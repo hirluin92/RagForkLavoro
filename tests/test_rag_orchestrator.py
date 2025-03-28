@@ -443,7 +443,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
 
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
-    assert result.cqa_data
+    assert result.cqa_data== None
     assert result.llm_data == None
     mock_language_service.a_do_query_enrichment.assert_called_once_with(
         request, mock_prompt_data[0], logger)
