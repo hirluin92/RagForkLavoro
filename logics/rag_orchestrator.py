@@ -108,11 +108,12 @@ async def a_get_query_response(request: RagOrchestratorRequest,
                                     enriched_query.standalone_question,
                                     None,
                                     None)
+            
+        request.query = enriched_query.standalone_question
 
     if tag_info.enable_cqa and tag_info.enable_enrichment:
         #CQA service response with query enriched
         if enriched_query.standalone_question != request.query:
-            request.query = enriched_query.standalone_question
             cqa_result = await cqa_do_query(request.query, tag, logger)
             if cqa_result:
                 logger.track_event(event_types.cqa_with_enrichment_event, 

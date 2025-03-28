@@ -218,6 +218,7 @@ async def a_get_intent_from_enriched_query(question: str,
         "api_version": settings.api_version,
         "temperature": prompt_data.model_parameters.temperature,
         "max_tokens": prompt_data.model_parameters.max_length,
+        "dict_langchain_variables": json.dumps(dict_langchain_variables, ensure_ascii=False).encode('utf-8'),
     }
     logger.track_event(event_types.llm_intent_classification_request,
                        data_to_log)
