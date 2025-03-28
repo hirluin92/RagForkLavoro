@@ -187,7 +187,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
     clog_settings = CLogSettings()
     
     clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag)
-    clog_last_status = CLog(ret_code=200, err_desc=None, id_event=clog_settings.msd_elencodomande, params=clog_params)
+    clog_last_status = CLog(ret_code=0, err_desc=None, id_event=clog_settings.msd_elencodomande, params=clog_params)
     
     # recupera cache redis
     # redis service
@@ -293,7 +293,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
             clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=user_form_application.numeroDomus, 
                                     num_prot=user_form_application.numeroProtocollo)
-            clog_last_status = CLog(ret_code=200, err_desc=None, id_event=clog_settings.msd_dettagliodomande, params=clog_params)
+            clog_last_status = CLog(ret_code=0, err_desc=None, id_event=clog_settings.msd_dettagliodomande, params=clog_params)
                 
             try:
                 form_application_details = await domus.a_get_form_application_details(
@@ -342,7 +342,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=form_application_details.numeroDomus, 
                                     num_prot=form_application_details.numeroProtocollo)
-        clog_last_status = CLog(ret_code=200, err_desc=None, id_event=clog_settings.msd_dettagliodomande, params=clog_params)
+        clog_last_status = CLog(ret_code=0, err_desc=None, id_event=clog_settings.msd_dettagliodomande, params=clog_params)
     
     try:
         if msd_completion_prompt_data == None:
