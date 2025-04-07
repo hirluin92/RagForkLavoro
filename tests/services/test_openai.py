@@ -6,6 +6,7 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from constants import llm
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody, OpenAIModelParameters
 from models.apis.prompt_template_response_body import TemplateResolveResponse
+from models.services.llm_context_document import LlmContextContent
 from services.openai import (
     a_get_answer_from_context as openai_get_answer_from_context,
     a_get_answer_from_domus,
@@ -51,14 +52,16 @@ async def test_openai_get_answer_from_context(mocker,
     question = "What is the capital of France?"
     interactions = []
     lang = "en"
-    mock_context = mocker.Mock()
-    mock_context.chunk_id = "id"
-    mock_context.toJSON.return_value = "json str"
-    context = [mock_context]
+    #mock_context = {
+     #   "chunk_id":"id"} 
+    context = [LlmContextContent("id", 1, 5.0)]                   
+    #"mock_context.chunk_id = "id"
+    #mock_context.toJSON.return_value = "json str"
+    #context = [mock_context]
 
-    mocker.patch(
-        "services.openai.asdict"
-    )
+   # mocker.patch(
+   #     "services.openai.asdict"
+   # )
 
     mocker.patch(
         "services.openai.check_prompt_variables",
