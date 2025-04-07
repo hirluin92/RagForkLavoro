@@ -52,6 +52,11 @@ async def a_get_answer_from_context(question: str, lang: str,
         "lang": lang,
         "chat_history": interactions
     }
+
+    logger.info("Calling Resolve Template API with:")
+    logger.info(f"PromptData ID: {getattr(prompt_data, 'id', 'unknown')}")
+    logger.info(f"TemplateData: {json.dumps(template_data, ensure_ascii=False)}")
+    
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
     
     # Check prompt parameter on prompt data

@@ -336,6 +336,11 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                             MonitorFormApplication(event_type=EventMonitorFormApplication.application_error),
                                             clog_last_status)
     else:
+         # riconoscimento utente autenticato
+        if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
+            # User not authenticated
+            return RagOrchestratorResponse("", "", None, "", 
+                                        MonitorFormApplication(event_type=EventMonitorFormApplication.user_not_authenticated))
         # get details from redis
         
         form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
@@ -375,7 +380,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                         clog_last_status)
         
         return await a_do_query(request, completion_prompt_data, language_service, enriched_query, logger, session, 
-                                domusData=str(form_application_details.model_dump()),
+                                domusData=form_application_details.model_dump_json(),
                                 clog=clog_last_status)
         
     except Exception as e:
