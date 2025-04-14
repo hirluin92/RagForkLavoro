@@ -79,7 +79,20 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
                                 headers=headers,
                                 ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
+                result_json = clean_numero_protocollo(result_json)
                 result_obj = DomusFormApplicationDetailsResponse.model_validate(result_json)
 
                 logger.track_event(event_types.domus_api_form_application_details__response, {"response": "OK"})
                 return result_obj
+
+def clean_numero_protocollo(json_data):
+    # Verifica se la chiave "listaDomande" esiste nel dizionario json_data
+    if "listaDomande" in json_data:
+        # Cicla attraverso ogni elemento della lista associata alla chiave "listaDomande"
+        for domanda in json_data["listaDomande"]:
+            # Se la chiave "numeroProtocollo" esiste all'interno dell'elemento corrente "domanda"
+            if "numeroProtocollo" in domanda:
+                # Rimuove gli spazi vuoti all'inizio e alla fine del valore di "numeroProtocollo"
+                domanda["numeroProtocollo"] = domanda["numeroProtocollo"].strip()
+    # Ritorna l'oggetto json_data modificato
+    return json_data
