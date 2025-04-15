@@ -43,6 +43,11 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                         headers=headers,
                         ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
+                
+                logger.track_event(event_types.event_track_custom_cf, {"result_json_con Spazi": json.dumps(result_json)})
+                result_json = clean_numero_protocollo(result_json)
+                logger.track_event(event_types.event_track_custom_cf, {"result_json_senza_Spazi": json.dumps(result_json)})
+                
                 result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
 
                 result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
