@@ -266,6 +266,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     else: 
                         intent_result.numero_protocollo = None
                         wrong_input = True
+                else:
+                    user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroProtocollo == intent_result.numero_protocollo[0]), None)
                     
             if intent_result.numero_domus:
                 if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_domus[0] in domanda.numeroDomus), None):
@@ -277,9 +279,11 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                     clog_last_status)
                     else: 
                         intent_result.numero_domus = None
-                        wrong_input = True
+                        wrong_input = True    
+                else:
+                   user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
                 
-            if len(list_forms.listaDomande) > 1:
+            if (not user_form_application) and (len(list_forms.listaDomande) > 1):
                 if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
                     clog_last_status.ret_code=0
                     clog_last_status.err_desc=None
