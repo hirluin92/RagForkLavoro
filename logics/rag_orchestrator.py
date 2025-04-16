@@ -228,7 +228,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     session,
                     logger)
              
-                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result": json.dumps(intent_result), "list_forms" : json.dumps(list_forms)})
+                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result": intent_result})
+                logger.track_event(event_types.event_track_log_intent_result, {"list_forms" : list_forms})
                 
             except ClientResponseError as e:
                 logger.exception(e)
