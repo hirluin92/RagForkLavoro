@@ -228,8 +228,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     session,
                     logger)
              
-                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result": intent_result})
-                logger.track_event(event_types.event_track_log_intent_result, {"list_forms" : list_forms})
+                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result" : json.dumps(intent_result, default=custom_serializer)})
+                logger.track_event(event_types.event_track_log_intent_result, {"list_forms" : json.dumps(list_forms, default=custom_serializer)})
                 
             except ClientResponseError as e:
                 logger.exception(e)
@@ -396,4 +396,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                         MonitorFormApplication(event_type=EventMonitorFormApplication.application_error),
                                         clog_last_status)
     
-    
+def custom_serializer(obj):
+    # Se l'oggetto ha un attributo __dict__, restituiscilo, altrimenti prova a convertirlo in stringa
+    if hasattr(obj, '__dict__'):
+        return obj.__dict__
+    return str(obj)
