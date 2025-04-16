@@ -206,6 +206,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         
         intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
         
+        
         # If the correct intent has not been recognized from the user's sentence, the rag will directly response
         if intent_result.intent.lower() == 'altro':
             return None
@@ -226,6 +227,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                             intent_result.stato_domanda[0] if intent_result.stato_domanda and len(intent_result.stato_domanda) > 0 else None),
                     session,
                     logger)
+             
+                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result": json.dumps(intent_result), "list_forms" : json.dumps(list_forms)})
                 
             except ClientResponseError as e:
                 logger.exception(e)
