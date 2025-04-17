@@ -219,6 +219,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         
         prompt_settings = PromptSettings()
         (domus_form_application_code, domus_form_application_name) = await a_get_form_application_name_by_tag(prompt_settings.config_container, tag, logger)
+        user_form_application = None
         
         try:
             try:
@@ -282,7 +283,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                         wrong_input = True    
                 else:
                    user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
-                
+               
             if (not user_form_application) and (len(list_forms.listaDomande) > 1):
                 if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
                     clog_last_status.ret_code=0
