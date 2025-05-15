@@ -194,8 +194,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
     # redis service
     if not request.conversation_id: 
         logger.exception('request.conversation_id is null')
-    else:
-        redisCache = redisService.get_from_redis(request.conversation_id)
+    #else:
+        #redisCache = redisService.get_from_redis(request.conversation_id)
     
     if not redisCache:
         if msd_intent_recognition_prompt_data == None:
