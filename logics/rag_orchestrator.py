@@ -194,8 +194,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
     # redis service
     if not request.conversation_id: 
         logger.exception('request.conversation_id is null')
-    #else:
-        #redisCache = redisService.get_from_redis(request.conversation_id)
+    else:
+        redisCache = redisService.get_from_redis(request.conversation_id)
     
     if not redisCache:
         if msd_intent_recognition_prompt_data == None:
@@ -354,6 +354,14 @@ async def check_msd_question(request: RagOrchestratorRequest,
         # get details from redis
         
         form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
+        logger.track_event(event_types.event_track_log_form_details,
+                               {
+                                   "Form_Details":  json.dumps(asdict(form_application_details), ensure_ascii=False).encode('utf-8')
+                               })
+        logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Form_Details":  json.dumps(asdict(redisCache), ensure_ascii=False).encode('utf-8')
+                               })
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=form_application_details.numeroDomus, 
