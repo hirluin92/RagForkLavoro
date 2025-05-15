@@ -354,13 +354,9 @@ async def check_msd_question(request: RagOrchestratorRequest,
         # get details from redis
         
         form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
-        logger.track_event(event_types.event_track_log_form_details,
-                               {
-                                   "Form_Details":  json.dumps(form_application_details, ensure_ascii=False).encode('utf-8')
-                               })
         logger.track_event(event_types.event_track_log_redis_cache,
                                {
-                                   "Form_Details":  json.dumps(redisCache, ensure_ascii=False).encode('utf-8')
+                                   "Redis_cache":  json.dumps(redisCache, ensure_ascii=False).encode('utf-8')
                                })
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
