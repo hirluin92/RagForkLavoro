@@ -293,8 +293,9 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                     event_type=EventMonitorFormApplication.show_answer_list), clog_last_status)
                 else: 
                     user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
-            else:   
-                user_form_application = list_forms.listaDomande[0]
+            else:
+                if (not user_form_application): 
+                    user_form_application = list_forms.listaDomande[0]
                 
             if not user_form_application:
                 # There are no form application submitted by the client with the specified "numero domus", so the rag will directly response
