@@ -336,6 +336,14 @@ async def check_msd_question(request: RagOrchestratorRequest,
             # save into redis
             if request.conversation_id and not redis:
                 redisService.set_to_redis(request.conversation_id, form_application_details.model_dump_json())
+                logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Set_Redis_cache":  json.dumps(form_application_details.model_dump_json(), ensure_ascii=False).encode('utf-8')
+                               })
+                logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Set_ConvID":  json.dumps(request.conversation_id, ensure_ascii=False).encode('utf-8')
+                               })
             
         except Exception as e:
             logger.exception(e)
@@ -357,6 +365,10 @@ async def check_msd_question(request: RagOrchestratorRequest,
         logger.track_event(event_types.event_track_log_redis_cache,
                                {
                                    "Redis_cache":  json.dumps(redisCache, ensure_ascii=False).encode('utf-8')
+                               })
+        logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "ConvID":  json.dumps(request.conversation_id, ensure_ascii=False).encode('utf-8')
                                })
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
