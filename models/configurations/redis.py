@@ -9,3 +9,4 @@ class RedisSettings(BaseSettings):
     password: str
     port: Optional[int] = 6380
     expiration_seconds: Optional[int] = 180
+    ssl:Optional[bool]=True

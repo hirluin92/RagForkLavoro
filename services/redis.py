@@ -5,18 +5,18 @@ from models.configurations.redis import RedisSettings
 
 def get_from_redis(key: str) -> Optional[str]:
     settings = RedisSettings()
-
-    redis_instance = Redis(host=settings.host, password=settings.password,
-                            port=settings.port, decode_responses=True, ssl=True)
+    pwd = None if settings.password == "" else settings.password
+    redis_instance = Redis(host=settings.host, password=pwd,
+                            port=settings.port, decode_responses=True, ssl=settings.ssl)
 
     return redis_instance.get(key.lower())
 
 
 def set_to_redis(key: str, value: str):
     settings = RedisSettings()
-
-    redis_instance = Redis(host=settings.host, password=settings.password,
-                            port=settings.port, decode_responses=True, ssl=True)
+    pwd = None if settings.password == "" else settings.password
+    redis_instance = Redis(host=settings.host, password=pwd,
+                            port=settings.port, decode_responses=True, ssl=settings.ssl)
     redis_instance.set(key.lower(), value, ex=settings.expiration_seconds)
 
 
@@ -42,13 +42,13 @@ def make_key(prefix_type: str, convid: str, dettid: str = None) -> str:
 
 def get_all_keys_by_conv_id(substring: str) -> List[str]:
     settings = RedisSettings()
-
+    pwd = None if settings.password == "" else settings.password
     redis_instance = Redis(
         host=settings.host,
-        password=settings.password,
+        password=pwd,
         port=settings.port,
         decode_responses=True,
-        ssl=True
+        ssl=settings.ssl
     )
 
     substring_lower = substring.lower()
