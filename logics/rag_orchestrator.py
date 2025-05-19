@@ -183,6 +183,10 @@ async def check_msd_question(request: RagOrchestratorRequest,
     redis = False
     wrong_input = False
     redisCache = None
+    carosello= False
+    dettaglioDomus= False
+    dettaglioProto = False
+ 
     
     msd_settings = MsdSettings()
     clog_settings = CLogSettings()
@@ -190,26 +194,39 @@ async def check_msd_question(request: RagOrchestratorRequest,
     clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag)
     clog_last_status = CLog(ret_code=0, err_desc=None, id_event=clog_settings.msd_elencodomande, params=clog_params)
     
+    # Intent recognition
+    intent_prompt_data = msd_intent_recognition_prompt_data
+        
+    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+
+     # If the correct intent has not been recognized from the user's sentence, the rag will directly response
+    if intent_result.intent.lower() == 'altro':
+        return None
+    
+
+    
     # recupera cache redis
     # redis service
-    if not request.conversation_id: 
-        logger.exception('request.conversation_id is null')
+    if not request.conversation_id:
+      logger.exception('request.conversation_id is null')
     else:
-        redisCache = redisService.get_from_redis(request.conversation_id)
-    
+        if not intent_result.numero_domus and not intent_result.numero_protocollo:
+            carosello = True
+            key=redisService.make_key("list",request.conversation_id)
+            redisCache = redisService.get_from_redis(key)
+        elif intent_result.numero_domus:
+            dettaglioDomus = True
+            key=redisService.make_key("dett",request.conversation_id,intent_result.numero_domus[0])
+            redisCache = redisService.get_from_redis(key)
+        elif intent_result.numero_protocollo:
+            dettaglioProto= True
+            key=redisService.make_key("dett",request.conversation_id,intent_result.numero_protocollo[0])
+            redisCache = redisService.get_from_redis(key)
+
     if not redisCache:
         if msd_intent_recognition_prompt_data == None:
             raise Exception("No msd_intent_recognition_prompt_data found.")
             
-        # Intent recognition
-        intent_prompt_data = msd_intent_recognition_prompt_data
-        
-        intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
-        
-        
-        # If the correct intent has not been recognized from the user's sentence, the rag will directly response
-        if intent_result.intent.lower() == 'altro':
-            return None
             
         # riconoscimento utente autenticato
         if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
@@ -286,6 +303,10 @@ async def check_msd_question(request: RagOrchestratorRequest,
                
             if (not user_form_application) and (len(list_forms.listaDomande) > 1):
                 if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
+                     # save into redis
+                    if request.conversation_id:
+                        key=redisService.make_key("list",request.conversation_id)
+                        redisService.set_to_redis(key, list_forms.model_dump_json())
                     clog_last_status.ret_code=0
                     clog_last_status.err_desc=None
                     return RagOrchestratorResponse("", "", None, "", 
@@ -335,7 +356,11 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 
             # save into redis
             if request.conversation_id and not redis:
-                redisService.set_to_redis(request.conversation_id, form_application_details.model_dump_json())
+                if dettaglioDomus:
+                    key=redisService.make_key("dett",request.conversation_id,intent_result.numero_domus[0])
+                if dettaglioProto:
+                    key=redisService.make_key("dett",request.conversation_id,intent_result.numero_protocollo[0])
+                redisService.set_to_redis(key, form_application_details.model_dump_json())
                 logger.track_event(event_types.event_track_log_redis_cache,
                                {
                                    "Set_Redis_cache":  json.dumps(form_application_details.model_dump_json(), ensure_ascii=False).encode('utf-8')
@@ -360,7 +385,14 @@ async def check_msd_question(request: RagOrchestratorRequest,
             return RagOrchestratorResponse("", "", None, "", 
                                         MonitorFormApplication(event_type=EventMonitorFormApplication.user_not_authenticated))
         # get details from redis
-        
+        if carosello:
+            list_forms= DomusFormApplicationsByFiscalCodeResponse.model_validate_json(redisCache)
+            clog_last_status.ret_code=0
+            clog_last_status.err_desc=None
+            return RagOrchestratorResponse("", "", None, "", 
+                                                MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
+                                                    event_type=EventMonitorFormApplication.show_answer_list), clog_last_status)
+
         form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
         logger.track_event(event_types.event_track_log_redis_cache,
                                {
