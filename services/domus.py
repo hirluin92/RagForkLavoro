@@ -99,7 +99,7 @@ def clean_numero_protocollo(json_data):
         # Cicla attraverso ogni elemento della lista associata alla chiave "listaDomande"
         for domanda in json_data["listaDomande"]:
             # Se la chiave "numeroProtocollo" esiste all'interno dell'elemento corrente "domanda"
-            if "numeroProtocollo" in domanda:
+            if "numeroProtocollo" in domanda and domanda["numeroProtocollo"]:
                 # Rimuove gli spazi vuoti all'inizio e alla fine del valore di "numeroProtocollo"
                 domanda["numeroProtocollo"] = domanda["numeroProtocollo"].strip()
     # Ritorna l'oggetto json_data modificato
