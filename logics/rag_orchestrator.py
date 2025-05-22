@@ -275,7 +275,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 
             if intent_result.numero_protocollo:
                 if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_protocollo[0] in domanda.numeroProtocollo), None):
-                    if len(list_forms.listaDomande) > 1:
+                    if len(list_forms.listaDomande) >= 1:
                         return RagOrchestratorResponse("", "", None, "", 
                                                     MonitorFormApplication(answer_text=msd_settings.no_spec_form_app_show_list, 
                                                                             answer_list=[request.model_dump() for request in list_forms.listaDomande],
@@ -289,7 +289,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     
             if intent_result.numero_domus:
                 if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_domus[0] in domanda.numeroDomus), None):
-                    if len(list_forms.listaDomande) > 1:
+                    if len(list_forms.listaDomande) >= 1:
                         return RagOrchestratorResponse("", "", None, "", 
                                                     MonitorFormApplication(answer_text=msd_settings.no_spec_form_app_show_list, 
                                                                             answer_list=[request.model_dump() for request in list_forms.listaDomande],
