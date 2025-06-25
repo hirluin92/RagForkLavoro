@@ -43,6 +43,11 @@ async def a_get_form_applications_by_fiscal_code(request: DomusFormApplicationsB
                         headers=headers,
                         ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
+                
+                logger.track_event(event_types.event_track_custom_cf, {"result_json_con Spazi": json.dumps(result_json)})
+                result_json = clean_numero_protocollo(result_json)
+                logger.track_event(event_types.event_track_custom_cf, {"result_json_senza_Spazi": json.dumps(result_json)})
+                
                 result_obj = DomusFormApplicationsByFiscalCodeResponse.model_validate(result_json)
 
                 result_obj.listaDomande = [domanda for domanda in result_obj.listaDomande if domanda.codiceProceduraDomus == request.form_application_code]
@@ -79,7 +84,23 @@ async def a_get_form_application_details(request: DomusFormApplicationDetailsReq
                                 headers=headers,
                                 ssl=ssl_context if ssl_context is not None else None) as result:
                 result_json = await result.json()
+                
+                logger.track_event(event_types.event_track_custom, {"result_json_con Spazi": json.dumps(result_json)})
+                result_json = clean_numero_protocollo(result_json)
+                logger.track_event(event_types.event_track_custom, {"result_json_senza_Spazi": json.dumps(result_json)})
                 result_obj = DomusFormApplicationDetailsResponse.model_validate(result_json)
 
                 logger.track_event(event_types.domus_api_form_application_details__response, {"response": "OK"})
                 return result_obj
+
+def clean_numero_protocollo(json_data):
+    # Verifica se la chiave "listaDomande" esiste nel dizionario json_data
+    if "listaDomande" in json_data:
+        # Cicla attraverso ogni elemento della lista associata alla chiave "listaDomande"
+        for domanda in json_data["listaDomande"]:
+            # Se la chiave "numeroProtocollo" esiste all'interno dell'elemento corrente "domanda"
+            if "numeroProtocollo" in domanda and domanda["numeroProtocollo"]:
+                # Rimuove gli spazi vuoti all'inizio e alla fine del valore di "numeroProtocollo"
+                domanda["numeroProtocollo"] = domanda["numeroProtocollo"].strip()
+    # Ritorna l'oggetto json_data modificato
+    return json_data

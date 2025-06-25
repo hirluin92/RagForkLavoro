@@ -183,6 +183,10 @@ async def check_msd_question(request: RagOrchestratorRequest,
     redis = False
     wrong_input = False
     redisCache = None
+    carosello= False
+    dettaglioDomus= False
+    dettaglioProto = False
+ 
     
     msd_settings = MsdSettings()
     clog_settings = CLogSettings()
@@ -190,25 +194,39 @@ async def check_msd_question(request: RagOrchestratorRequest,
     clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag)
     clog_last_status = CLog(ret_code=0, err_desc=None, id_event=clog_settings.msd_elencodomande, params=clog_params)
     
+    # Intent recognition
+    intent_prompt_data = msd_intent_recognition_prompt_data
+        
+    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+
+     # If the correct intent has not been recognized from the user's sentence, the rag will directly response
+    if intent_result.intent.lower() == 'altro':
+        return None
+    
+
+    
     # recupera cache redis
     # redis service
-    if not request.conversation_id: 
-        logger.exception('request.conversation_id is null')
+    if not request.conversation_id:
+      logger.exception('request.conversation_id is null')
     else:
-        redisCache = redisService.get_from_redis(request.conversation_id)
-    
+        if not intent_result.numero_domus and not intent_result.numero_protocollo:
+            carosello = True
+            key=redisService.make_key("list",request.conversation_id)
+            redisCache = redisService.get_from_redis(key)
+        elif intent_result.numero_domus:
+            dettaglioDomus = True
+            key=redisService.make_key("dett",request.conversation_id,intent_result.numero_domus[0])
+            redisCache = redisService.get_from_redis(key)
+        elif intent_result.numero_protocollo:
+            dettaglioProto= True
+            key=redisService.make_key("dett",request.conversation_id,intent_result.numero_protocollo[0])
+            redisCache = redisService.get_from_redis(key)
+
     if not redisCache:
         if msd_intent_recognition_prompt_data == None:
             raise Exception("No msd_intent_recognition_prompt_data found.")
             
-        # Intent recognition
-        intent_prompt_data = msd_intent_recognition_prompt_data
-        
-        intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
-        
-        # If the correct intent has not been recognized from the user's sentence, the rag will directly response
-        if intent_result.intent.lower() == 'altro':
-            return None
             
         # riconoscimento utente autenticato
         if string.is_null_or_empty_or_whitespace(request.user_fiscal_code) or string.is_null_or_empty_or_whitespace(request.token):
@@ -218,6 +236,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
         
         prompt_settings = PromptSettings()
         (domus_form_application_code, domus_form_application_name) = await a_get_form_application_name_by_tag(prompt_settings.config_container, tag, logger)
+        user_form_application = None
         
         try:
             try:
@@ -226,6 +245,9 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                             intent_result.stato_domanda[0] if intent_result.stato_domanda and len(intent_result.stato_domanda) > 0 else None),
                     session,
                     logger)
+             
+                logger.track_event(event_types.event_track_log_intent_result, {"Intent_result" : json.dumps(intent_result, default=custom_serializer)})
+                logger.track_event(event_types.event_track_log_intent_result, {"list_forms" : json.dumps(list_forms, default=custom_serializer)})
                 
             except ClientResponseError as e:
                 logger.exception(e)
@@ -253,7 +275,7 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 
             if intent_result.numero_protocollo:
                 if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_protocollo[0] in domanda.numeroProtocollo), None):
-                    if len(list_forms.listaDomande) > 1:
+                    if len(list_forms.listaDomande) >= 1:
                         return RagOrchestratorResponse("", "", None, "", 
                                                     MonitorFormApplication(answer_text=msd_settings.no_spec_form_app_show_list, 
                                                                             answer_list=[request.model_dump() for request in list_forms.listaDomande],
@@ -262,10 +284,12 @@ async def check_msd_question(request: RagOrchestratorRequest,
                     else: 
                         intent_result.numero_protocollo = None
                         wrong_input = True
+                else:
+                    user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroProtocollo == intent_result.numero_protocollo[0]), None)
                     
             if intent_result.numero_domus:
                 if not next((domanda for domanda in list_forms.listaDomande if intent_result.numero_domus[0] in domanda.numeroDomus), None):
-                    if len(list_forms.listaDomande) > 1:
+                    if len(list_forms.listaDomande) >= 1:
                         return RagOrchestratorResponse("", "", None, "", 
                                                     MonitorFormApplication(answer_text=msd_settings.no_spec_form_app_show_list, 
                                                                             answer_list=[request.model_dump() for request in list_forms.listaDomande],
@@ -273,10 +297,16 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                     clog_last_status)
                     else: 
                         intent_result.numero_domus = None
-                        wrong_input = True
-                
-            if len(list_forms.listaDomande) > 1:
+                        wrong_input = True    
+                else:
+                   user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
+               
+            if (not user_form_application) and (len(list_forms.listaDomande) > 1):
                 if string.is_null_or_empty_or_whitespace(request.text_by_card) or len(intent_result.numero_domus) == 0:
+                     # save into redis
+                    if request.conversation_id:
+                        key=redisService.make_key("list",request.conversation_id)
+                        redisService.set_to_redis(key, list_forms.model_dump_json())
                     clog_last_status.ret_code=0
                     clog_last_status.err_desc=None
                     return RagOrchestratorResponse("", "", None, "", 
@@ -284,8 +314,9 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                                     event_type=EventMonitorFormApplication.show_answer_list), clog_last_status)
                 else: 
                     user_form_application = next((domanda for domanda in list_forms.listaDomande if domanda.numeroDomus == intent_result.numero_domus[0]), None)
-            else:   
-                user_form_application = list_forms.listaDomande[0]
+            else:
+                if (not user_form_application): 
+                    user_form_application = list_forms.listaDomande[0]
                 
             if not user_form_application:
                 # There are no form application submitted by the client with the specified "numero domus", so the rag will directly response
@@ -325,7 +356,19 @@ async def check_msd_question(request: RagOrchestratorRequest,
                 
             # save into redis
             if request.conversation_id and not redis:
-                redisService.set_to_redis(request.conversation_id, form_application_details.model_dump_json())
+                if dettaglioDomus:
+                    key=redisService.make_key("dett",request.conversation_id,intent_result.numero_domus[0])
+                if dettaglioProto:
+                    key=redisService.make_key("dett",request.conversation_id,intent_result.numero_protocollo[0])
+                redisService.set_to_redis(key, form_application_details.model_dump_json())
+                logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Set_Redis_cache":  json.dumps(form_application_details.model_dump_json(), ensure_ascii=False).encode('utf-8')
+                               })
+                logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Set_ConvID":  json.dumps(request.conversation_id, ensure_ascii=False).encode('utf-8')
+                               })
             
         except Exception as e:
             logger.exception(e)
@@ -342,8 +385,23 @@ async def check_msd_question(request: RagOrchestratorRequest,
             return RagOrchestratorResponse("", "", None, "", 
                                         MonitorFormApplication(event_type=EventMonitorFormApplication.user_not_authenticated))
         # get details from redis
-        
+        if carosello:
+            list_forms= DomusFormApplicationsByFiscalCodeResponse.model_validate_json(redisCache)
+            clog_last_status.ret_code=0
+            clog_last_status.err_desc=None
+            return RagOrchestratorResponse("", "", None, "", 
+                                                MonitorFormApplication(answer_list=[request.model_dump() for request in list_forms.listaDomande],
+                                                    event_type=EventMonitorFormApplication.show_answer_list), clog_last_status)
+
         form_application_details = DomusFormApplicationDetailsResponse.model_validate_json(redisCache)
+        logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "Redis_cache":  json.dumps(redisCache, ensure_ascii=False).encode('utf-8')
+                               })
+        logger.track_event(event_types.event_track_log_redis_cache,
+                               {
+                                   "ConvID":  json.dumps(request.conversation_id, ensure_ascii=False).encode('utf-8')
+                               })
         
         clog_params = CLogParams(cf=request.user_fiscal_code, prestazione=tag, 
                                     num_domus=form_application_details.numeroDomus, 
@@ -392,4 +450,8 @@ async def check_msd_question(request: RagOrchestratorRequest,
                                         MonitorFormApplication(event_type=EventMonitorFormApplication.application_error),
                                         clog_last_status)
     
-    
+def custom_serializer(obj):
+    # Se l'oggetto ha un attributo __dict__, restituiscilo, altrimenti prova a convertirlo in stringa
+    if hasattr(obj, '__dict__'):
+        return obj.__dict__
+    return str(obj)
