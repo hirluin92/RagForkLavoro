@@ -100,3 +100,5 @@ yarl==1.9.4
 zipp==3.19.2
 azure-identity==1.16.0
 redis==5.2.1
+aiocache==0.12.3
+azure-keyvault-secrets==4.8.0
