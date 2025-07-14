@@ -8,7 +8,7 @@ from models.configurations.prompt import PromptSettings
 from models.configurations.redis import RedisSettings
 from models.configurations.search import SearchSettings
 from models.configurations.storage import BlobStorageSettings
-
+from models.configurations.access_control import AccessControlSettings
 
 @lru_cache
 def get_cqa_settings():
@@ -27,8 +27,23 @@ def get_mssql_settings():
     return MsSqlSettings()
 
 @lru_cache
-def get_openai_settings():
-    return OpenAISettings()
+class OpenAISettingCached:
+    def __init__(self):
+        self.completion_key = None
+        self.settings = OpenAISettings()
+
+def get_openai_settings() -> OpenAISettings:
+    return OpenAISettingCached().settings
+
+def set_openai_settings(completion_key: str = None) -> OpenAISettings:
+    """
+    Restituisce le impostazioni di OpenAI, con la possibilità di sovrascrivere
+    la 'completion_key' da un parametro.
+    """
+    __cached__: OpenAISettingCached = OpenAISettingCached()
+    if completion_key is not None:
+            __cached__.settings.completion_key = completion_key
+    return __cached__.settings
 
 @lru_cache
 def get_search_settings():
@@ -45,3 +60,7 @@ def get_prompt_settings():
 @lru_cache
 def get_redis_settings():
     return RedisSettings()
+
+@lru_cache
+def get_access_control_settings() -> AccessControlSettings:
+    return AccessControlSettings()
