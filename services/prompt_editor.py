@@ -39,7 +39,8 @@ async def a_get_response_from_prompt_retrieval_api(promptId: str,
         endpoint = settings.editor_endpoint + f"/{promptId}/{version}"
 
     headers = {misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
-               misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key}
+               misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key       
+}
     try:
         async with session.post(endpoint,
                                 data= "{}",
