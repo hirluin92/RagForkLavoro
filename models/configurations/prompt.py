@@ -13,6 +13,7 @@ class PromptSettings(BaseSettings):
     config_container: str = None
     template_resolve_endpoint: str
     template_api_key: str
+    template_ocp_apim_subscription_key: str = None
     # msd_intent_recognition_default_id: str
     # msd_intent_recognition_default_version: Optional[str] = None
     # msd_completion_default_id: str
