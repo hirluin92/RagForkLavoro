@@ -27,31 +27,16 @@ def get_mssql_settings():
     return MsSqlSettings()
 
 @lru_cache
-class OpenAISettingCached:
-    def __init__(self):
-        self.completion_key = None
-        self.settings = OpenAISettings()
-
-def get_openai_settings() -> OpenAISettings:
-    return OpenAISettingCached().settings
-
-def set_openai_settings(completion_key: str = None) -> OpenAISettings:
-    """
-    Restituisce le impostazioni di OpenAI, con la possibilità di sovrascrivere
-    la 'completion_key' da un parametro.
-    """
-    __cached__: OpenAISettingCached = OpenAISettingCached()
-    if completion_key is not None:
-            __cached__.settings.completion_key = completion_key
-    return __cached__.settings
-
-@lru_cache
 def get_search_settings():
     return SearchSettings()
 
 @lru_cache
 def get_storage_settings():
     return BlobStorageSettings()
+
+@lru_cache
+def get_openai_settings():
+    return OpenAISettings()
 
 @lru_cache
 def get_prompt_settings():

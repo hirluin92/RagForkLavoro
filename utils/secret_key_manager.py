@@ -35,7 +35,7 @@ async def a_get_secret_key(source_identifier: str) -> str:
                     
                     return secret.value
 
-    raise ValueError(f"no source identifier found for '{source_identifier}'")
+    raise ValueError(f"'caller-service' {source_identifier} not yet configured in configuration file. Please refer to GenAiAsPlatform administrators.")
 
 
 def extract_keyvault_info(input_string: str) -> Tuple[str, str, str]:

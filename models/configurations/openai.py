@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from typing import Optional
 
 class OpenAISettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='AZURE_OPENAI_')
