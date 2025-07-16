@@ -1,5 +1,5 @@
 import json
-from logging import Logger
+from services.logging import Logger
 from aiohttp import ClientSession
 from tenacity import retry, stop_after_attempt, wait_exponential
 from constants import event_types

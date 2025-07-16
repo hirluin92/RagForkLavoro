@@ -1,4 +1,4 @@
-from logging import Logger
+from services.logging import Logger
 
 from aiohttp import ClientSession
 from logics.ai_query_service_base import AiQueryServiceBase

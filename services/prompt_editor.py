@@ -28,13 +28,13 @@ from services.storage import a_get_blob_content_from_container
     reraise=True,
 )
 async def a_get_response_from_prompt_retrieval_api(
-    promptId: str, logger: Logger, session: ClientSession, version: Optional[str] = None
+    promptId: str, logger: Logger, session: ClientSession, version: Optional[str] = None, resolveJinja:bool = False
 ) -> PromptEditorResponseBody:
 
     settings = PromptSettings()
-    endpoint = settings.editor_endpoint + f"/{promptId}"
+    endpoint = settings.editor_endpoint + f"/{promptId}?resolveJinja={resolveJinja}"
     if version != None and version != "":
-        endpoint = settings.editor_endpoint + f"/{promptId}/{version}"
+        endpoint = settings.editor_endpoint + f"/{promptId}/{version}?resolveJinja={resolveJinja}"
 
     headers = {
         misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,

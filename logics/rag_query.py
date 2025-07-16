@@ -119,7 +119,7 @@ async def a_get_response_from_llm(
     lang: str,
     context: List[RagContextContent],
     prompt_data: PromptEditorResponseBody,
-    logger,
+    logger: Logger,
     interactions: str,
     consumer: LLMConsumer,
 ) -> RagResponse:
@@ -136,6 +136,7 @@ async def a_get_response_from_llm(
         data_to_log["context_" + str(index).zfill(2)] = json.dumps(
             context_to_send_to_append.toJSON(), ensure_ascii=False
         ).encode("utf-8")
+
     logger.track_event(event_types.llm_answer_generation_request_event, data_to_log)
 
     if llm_model_id == llm_const.mistralai:

@@ -72,4 +72,6 @@ def set_mock_env(monkeypatch):
     monkeypatch.setenv("CLOG_MSD_ELENCODOMANDE", "elenco domande")
     monkeypatch.setenv("CLOG_MSD_DETTAGLIODOMANDE", "dettaglio domande")
     monkeypatch.setenv("PROMPT_TEMPLATE_RESOLVE_ENDPOINT", "https://genaiplt-function-apis-dev.azurewebsites.net/api/template/resolve")
-    monkeypatch.setenv("PROMPT_TEMPLATE_API_KEY", "prompt template api key")
+    monkeypatch.setenv("PROMPT_TEMPLATE_API_KEY", "prompt_template_api_key")
+    monkeypatch.setenv("PROMPT_TEMPLATE_OCP_APIM_SUBSCRIPTION_KEY","prompt-template_ocp_apim_subscription_key")
+    monkeypatch.setenv("ENABLE_ACCESS_CONTROL", "false")

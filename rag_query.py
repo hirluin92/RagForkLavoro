@@ -64,7 +64,7 @@ async def a_query(req: func.HttpRequest, context: func.Context) -> func.HttpResp
                         response=None,
                     )
                 result = await language_service.a_do_query(
-                    request, completion_prompt_data, logger.logger, session, consumer
+                    request, completion_prompt_data, logger, session, consumer
                 )
                 json_content = json.dumps(result, ensure_ascii=False, default=lambda x: x.__dict__).encode("utf-8")
                 logger.track_event(event_types.rag_query_performed_event, {"response-body": json_content})

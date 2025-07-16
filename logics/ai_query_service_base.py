@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from logging import Logger
+from services.logging import Logger
 import os
 
 from aiohttp import ClientSession

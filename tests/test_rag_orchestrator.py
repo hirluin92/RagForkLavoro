@@ -356,6 +356,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
     set_mock_env(monkeypatch)
     logger = mocker.Mock(spec=Logger)
     mock_session = mocker.Mock()
+    mock_consumer = mocker.Mock(spec=LLMConsumer("test_consumer", "1234567890abcdef"))
     # Mock CQA
     test_rag_orchestrator_response = CQAResponse(text_answer="L'assegno unico è...", cqa_data={"fake": "fake"})
     mocker.patch("logics.rag_orchestrator.cqa_do_query", side_effect=[None, test_rag_orchestrator_response])
@@ -423,7 +424,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
     request = RagOrchestratorRequest(
         query="Aseno unco",
         llm_model_id="OPENAI",
-        interactions=[{"question": "fake", "answer": "fake"}],
+        interactions=[Interaction(question="fake", answer="fake")],
         tags=["auu"],
         environment="staging",
     )
@@ -443,15 +444,15 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
 
     result = await a_get_tags_by_tag_names(logger, ["tag1", "tag2"])
 
-    result = await logics.rag_orchestrator.a_get_query_response(
-        request, logger, mock_session, consumer=LLMConsumer("test_consumer", "1234567890abcdef")
-    )
+    result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session, mock_consumer)
 
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
     assert result.cqa_data == None
     assert result.llm_data == None
-    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, mock_prompt_data[0], logger)
+    mock_language_service.a_do_query_enrichment.assert_called_once_with(
+        request, mock_prompt_data[0], logger, mock_consumer
+    )
 
 
 @pytest.mark.asyncio
@@ -459,6 +460,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     set_mock_env(monkeypatch)
     logger = mocker.Mock(spec=Logger)
     mock_session = mocker.Mock()
+    mock_consumer = mocker.Mock(spec=LLMConsumer("test_consumer", "1234567890abcdef"))
     # Mock CQA
     mocker.patch("logics.rag_orchestrator.cqa_do_query", return_value=None)
     # Mock get prompt
@@ -529,7 +531,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
     request = RagOrchestratorRequest(
         query="Aseno unco",
         llm_model_id="OPENAI",
-        interactions=[{"question": "fake", "answer": "fake"}],
+        interactions=[Interaction(question="fake", answer="fake")],
         tags=["auu"],
         environment="staging",
     )
@@ -549,15 +551,15 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
 
     result = await a_get_tags_by_tag_names(logger, ["tag1", "tag2"])
 
-    result = await logics.rag_orchestrator.a_get_query_response(
-        request, logger, mock_session, consumer=LLMConsumer("test_consumer", "1234567890abcdef")
-    )
+    result = await logics.rag_orchestrator.a_get_query_response(request, logger, mock_session, mock_consumer)
 
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
     assert result.cqa_data == None
     assert result.llm_data
-    mock_language_service.a_do_query_enrichment.assert_called_once_with(request, mock_prompt_data[0], logger)
+    mock_language_service.a_do_query_enrichment.assert_called_once_with(
+        request, mock_prompt_data[0], logger, mock_consumer
+    )
 
 
 def test_factory():

@@ -49,7 +49,7 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
                     "Bad Request: The request llm model id  is different from prompt editor llm model.", response=None
                 )
             result = await language_service.a_do_query_enrichment(
-                request, enrichment_prompt_data, logger.logger, consumer
+                request, enrichment_prompt_data, logger, consumer
             )
             json_content = json.dumps(result.model_dump())
             return func.HttpResponse(json_content, mimetype="application/json")
