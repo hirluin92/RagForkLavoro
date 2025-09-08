@@ -14,7 +14,7 @@ async def handle_access_control(
     completion_key: Optional[str] = None
 
     if not caller_service:
-        if ac_settings.enable_access_control:
+        if not ac_settings.enable_access_control:
             logger.info("Invocation from customer: {0} - setting default values".format("unknown"))
             completion_key = settings.completion_key
             caller_service = "default"
