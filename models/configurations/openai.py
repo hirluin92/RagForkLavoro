@@ -12,3 +12,5 @@ class OpenAISettings(BaseSettings):
     embedding_deployment_model: str
     embedding_endpoint: str
     embedding_key: str
+    embedding_timeout: float = 30
+    completion_key_storage_format: str = "{0}" #-Completion sarebbe da uniformare
