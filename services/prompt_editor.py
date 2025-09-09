@@ -28,18 +28,19 @@ from services.storage import a_get_blob_content_from_container
     reraise=True,
 )
 async def a_get_response_from_prompt_retrieval_api(
-    promptId: str, logger: Logger, session: ClientSession, version: Optional[str] = None, resolveJinja:bool = False
+    promptId: str, logger: Logger, session: ClientSession, version: Optional[str] = None, resolveJinja: bool = False
 ) -> PromptEditorResponseBody:
 
     settings = PromptSettings()
-    endpoint = settings.editor_endpoint + f"/{promptId}?resolveJinja={resolveJinja}"
-    if version != None and version != "":
-        endpoint = settings.editor_endpoint + f"/{promptId}/{version}?resolveJinja={resolveJinja}"
+    if version:
+        endpoint = f"{settings.editor_endpoint}/{promptId}/{version}?resolveJinja={resolveJinja}"
+    else:
+        endpoint = f"{settings.editor_endpoint}/{promptId}?resolveJinja={resolveJinja}"
 
     headers = {
         misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
         misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key,
- #       misc_const.HTTP_HEADER_APIM_SUBSCRIPTION_KEY: settings.template_ocp_apim_subscription_key        
+ #       misc_const.HTTP_HEADER_APIM_SUBSCRIPTION_KEY: settings.template_ocp_apim_subscription_key,
     }
     try:
         async with session.post(endpoint, data="{}", headers=headers) as result:
@@ -98,10 +99,10 @@ async def a_get_prompts_data(
 
 
 async def a_get_response_from_prompts_api(
-    logger: Logger, session: ClientSession, payloads: list[PromptEditorRequest]
+    logger: Logger, session: ClientSession, payloads: list[PromptEditorRequest], resolveJinja: bool = False
 ) -> list[PromptEditorResponseBody]:
     settings = PromptSettings()
-    endpoint = settings.editor_endpoint
+    endpoint = settings.editor_endpoint + f"?resolveJinja={resolveJinja}"
     # data = payloads.toJSON()
 
     body = [request.to_dict() for request in payloads]
@@ -111,20 +112,14 @@ async def a_get_response_from_prompts_api(
         misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.editor_api_key,
  #       misc_const.HTTP_HEADER_APIM_SUBSCRIPTION_KEY: settings.template_ocp_apim_subscription_key
     }
+    async with session.post(
+        endpoint, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers=headers
+    ) as result:
+        result_json = await result.json()
+        result_json_string = json.dumps(result_json, ensure_ascii=False).encode("utf-8")
+        track_event_data = {"request_endpoint": endpoint, "response": result_json_string}
+        logger.track_event(event_types.prompts_api_result_response, track_event_data)
 
-    async with aiohttp.ClientSession() as sessionClient:
-        async with sessionClient.post(
-            endpoint, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers=headers
-        ) as result:
-            result_json = await result.json()
-            result_json_string = json.dumps(result_json, ensure_ascii=False).encode("utf-8")
-            if result.status == 200:
-                track_event_data = {"request_endpoint": endpoint, "response": result_json_string}
-                logger.track_event(event_types.prompts_api_result_response, track_event_data)
-            else:
-                error_message = result_json_string.decode("utf-8")
-                logger.exception(error_message)
-                raise Exception(f"API: {endpoint} " + error_message)
     return result_json
 
 
@@ -183,7 +178,7 @@ async def a_get_prompt_from_resolve_jinja_template_api(
     headers = {
         misc_const.HTTP_HEADER_CONTENT_TYPE_NAME: misc_const.HTTP_HEADER_CONTENT_TYPE_JSON_VALUE,
         misc_const.HTTP_HEADER_FUNCTION_KEY_NAME: settings.template_api_key,
- #       misc_const.HTTP_HEADER_APIM_SUBSCRIPTION_KEY: settings.template_ocp_apim_subscription_key
+ #       misc_const.HTTP_HEADER_APIM_SUBSCRIPTION_KEY: settings.template_ocp_apim_subscription_key,
     }
 
     async with aiohttp.ClientSession() as session:
