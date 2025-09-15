@@ -1,6 +1,6 @@
 from dataclasses import asdict
 import json
-from logging import Logger
+from services.logging import Logger
 from typing import List
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_mistralai import ChatMistralAI

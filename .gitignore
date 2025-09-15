@@ -58,3 +58,6 @@ __azurite_db*__.json
 
 #coverage
 htmlcov/
+
+# Test files
+/local_test

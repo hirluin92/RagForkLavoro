@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from typing import Optional
 
 class OpenAISettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='AZURE_OPENAI_')
@@ -11,3 +12,5 @@ class OpenAISettings(BaseSettings):
     embedding_deployment_model: str
     embedding_endpoint: str
     embedding_key: str
+    embedding_timeout: float = 30
+    completion_key_storage_format: str = "{0}" #-Completion sarebbe da uniformare

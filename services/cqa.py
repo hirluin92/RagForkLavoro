@@ -1,6 +1,6 @@
 from functools import cache
 import json
-from logging import Logger
+from services.logging import Logger
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.language.questionanswering.aio import QuestionAnsweringClient
 from constants import event_types, environment

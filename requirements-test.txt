@@ -9,7 +9,7 @@ async-timeout==4.0.3
 attrs==23.2.0
 azure-ai-documentintelligence==1.0.0b3
 azure-ai-language-questionanswering==1.1.0
-azure-core==1.30.2
+azure-core==1.31.0
 azure-core-tracing-opentelemetry==1.0.0b11
 azure-functions==1.20.0
 azure-monitor-events-extension==0.1.0
@@ -98,5 +98,7 @@ urllib3==2.2.2
 wrapt==1.16.0
 yarl==1.9.4
 zipp==3.19.2
-azure-identity==1.16.0
+azure-identity==1.19.0
 redis==5.2.1
+aiocache==0.12.3
+azure-keyvault-secrets==4.9.0

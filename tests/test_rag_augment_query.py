@@ -9,12 +9,32 @@ from tests.mock_logging import set_mock_logger_builder
 from rag_augment_query import a_augment_query as  rag_augmentQuery_endpoint
 import constants.llm as llm_constants
 
-
 @pytest.mark.asyncio
 async def test_query_no_body(mocker, monkeypatch):
     # Arrange
     set_mock_env(monkeypatch)
 
+    set_mock_logger_builder(mocker)
+
+    req = func.HttpRequest(method='POST',
+                           headers={'Content-Type': 'application/json'},
+                           body=None,
+                           url='/api/augmentQuery')
+
+    mock_trace_context = mocker.Mock()
+
+    # Act
+    func_call = rag_augmentQuery_endpoint.build().get_user_function()
+    response = await func_call(req, mock_trace_context)
+    # Assert
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_query_no_caller_service(mocker, monkeypatch):
+    # Arrange
+    set_mock_env(monkeypatch)
+    monkeypatch.setenv("ENABLE_ACCESS_CONTROL", "true")
+    
     set_mock_logger_builder(mocker)
 
     req = func.HttpRequest(method='POST',

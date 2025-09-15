@@ -12,14 +12,14 @@ class LoggerBuilder:
 
     def __enter__(self):
         functions_current_context = {
-            "traceparent": self.context.trace_context.Traceparent,
-            "tracestate": self.context.trace_context.Tracestate
+            "traceparent": self.context.trace_context.trace_parent,
+            "tracestate": self.context.trace_context.trace_state
         }
         parent_context = TraceContextTextMapPropagator().extract(
             carrier=functions_current_context
         )
         self.token = attach(parent_context)
-        return Logger(self.name, self.context.invocation_id, self.context.trace_context.Traceparent.split('-')[1])
+        return Logger(self.name, self.context.invocation_id, self.context.trace_context.trace_parent.split('-')[1])
 
     def __exit__(self, *args):
         detach(self.token)
@@ -30,9 +30,6 @@ class Logger:
         self.logger = getLogger(name)
         self.invocation_id = invocation_id
         self.operation_id = operation_id
-
-    def info(self, message):
-        self.logger.info(message, extra={"InvocationId": self.invocation_id})
 
     def info(self, message):
         self.logger.info(message, extra={"InvocationId": self.invocation_id})

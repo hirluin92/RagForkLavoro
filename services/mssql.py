@@ -1,4 +1,4 @@
-from logging import Logger
+from services.logging import Logger
 
 from aioodbc import create_pool
 from models.apis.rag_orchestrator_request import PromptEditorCredential
