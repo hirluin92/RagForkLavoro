@@ -98,7 +98,10 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             )        
         except Exception as e:         
             logger.exception(e)    
-            logger.track_event(event_types.rag_orchestrator_debug_track_trace)
+            logger.track_event(
+                event_types.rag_orchestrator_debug_track_trace,
+                {"debug": True},
+            )
             problem = Problem(500, "Internal server error", str(e), None, None)
             return func.HttpResponse(
                 json.dumps(problem.to_dict(), default=str, ensure_ascii=False), status_code=500, mimetype="application/problem+json"
