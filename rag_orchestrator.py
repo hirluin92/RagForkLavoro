@@ -80,13 +80,13 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
 
                 return func.HttpResponse(json_content, mimetype="application/json")
 
-        except ValidationError as e:
+        except ValidationError as e:            
             problem = Problem(422, "Bad Request", e.errors(), None, None)
             return func.HttpResponse(
                 json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json"
             )
         except ValueError as ve:
-            problem = Problem(422, "Bad Request", str(ve), None, None)
+            problem = Problem(422, "Bad Request", str(ve), None, None)            
             return func.HttpResponse(
                 json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json"
             )
@@ -96,9 +96,9 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
             return func.HttpResponse(
                 json.dumps(problem.to_dict()), status_code=e.error_code, mimetype="application/problem+json"
             )        
-        except Exception as e:
+        except Exception as e:         
             logger.exception(e)
-            problem = Problem(500, "Internal server error", e.args[0], None, None)
+            problem = Problem(500, "Internal server error", str(e), None, None)
             return func.HttpResponse(
-                json.dumps(problem.to_dict()), status_code=500, mimetype="application/problem+json"
+                json.dumps(problem.to_dict(), default=str, ensure_ascii=False), status_code=500, mimetype="application/problem+json"
             )
