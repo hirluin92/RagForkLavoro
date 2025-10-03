@@ -584,7 +584,7 @@ async def check_msd_question(
             raise Exception("No enrichment_prompt_data found.")
 
         domus_result = await language_service.a_get_domus_answer(
-            request, form_application_details.model_dump_json(), msd_completion_prompt_data, logger
+            request, form_application_details.model_dump_json(), msd_completion_prompt_data, logger, consumer
         )
 
         if domus_result:
@@ -640,6 +640,7 @@ async def check_msd_question(
             session,
             domusData=form_application_details.model_dump_json(),
             clog=clog_last_status,
+            consumer=consumer
         )
 
     except Exception as e:
