@@ -169,6 +169,7 @@ async def a_get_query_response(
         tag_info,
         logger,
         session,
+        consumer
     )
 
     if tag_info.id_monitoring_question == EnumMonitorFormApplication.Rag_MonitoringQuestion.value and (
@@ -228,6 +229,7 @@ async def check_msd_question(
     tag_info: MsSqlTag,
     logger: Logger,
     session: ClientSession,
+    consumer: LLMConsumer,
 ) -> RagOrchestratorResponse:
 
     redis = False
@@ -246,7 +248,7 @@ async def check_msd_question(
     # Intent recognition
     intent_prompt_data = msd_intent_recognition_prompt_data
 
-    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger)
+    intent_result = await language_service.a_compute_classify_intent_query(request, intent_prompt_data, logger, consumer)
 
     # If the correct intent has not been recognized from the user's sentence, the rag will directly response
     if intent_result.intent.lower() == "altro":
