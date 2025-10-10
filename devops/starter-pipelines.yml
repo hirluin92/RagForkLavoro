@@ -27,7 +27,7 @@ stages:
     linuxPoolName: linuxpoolcontainersvil
     zipArtifacts: true
     installDependencies: true
-    pythonVersion: "3.12"
+    pythonVersion: "v3.12"
     enableAdditionalCopy: true
     additionalSourceFolderToCopy: $(build.SourcesDirectory)
     additionalTargetFolder: $(build.artifactstagingdirectory)
