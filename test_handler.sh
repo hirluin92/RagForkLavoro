@@ -15,7 +15,7 @@ VENV_NAME="venv"
 
 [ -d $VENV_NAME ] && rm -rf $VENV_NAME
 
-python3.9 -m venv $VENV_NAME
+python3.12 -m venv $VENV_NAME
 source $VENV_NAME/bin/activate
 
 # Set the environment variable
@@ -23,8 +23,8 @@ export ENV="test"
 
 set -o errexit
 
-pip3.9 install --trusted-host nexus.inps.it --index-url=http://nexus.inps.it/repository/python-group/simple --upgrade pip==23.3.2
-pip3.9 install -vvv --trusted-host nexus.inps.it --index-url=http://nexus.inps.it/repository/python-group/simple -r requirements-test.txt
+pip3.12 install --trusted-host nexus.inps.it --index-url=http://nexus.inps.it/repository/python-group/simple --upgrade pip==23.3.2
+pip3.12 install -vvv --trusted-host nexus.inps.it --index-url=http://nexus.inps.it/repository/python-group/simple -r requirements-test.txt
 
 
 if [ $? -eq 0 ]; then

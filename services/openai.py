@@ -21,6 +21,10 @@ import constants.llm as llm_const
 from services.prompt_editor import a_get_prompt_from_resolve_jinja_template_api, build_prompt_messages
 from utils.settings import get_openai_settings
 
+#Bypassa il passaggio del "Context" che genera un errore bloccante su python>=3.12
+import langchain_core.runnables.base as base
+base.asyncio_accepts_context = lambda: False
+
 # --- SOLUZIONE NON SICURA: SOLO PER SVILUPPO, MAI IN PRODUZIONE ---
 # Crea un client HTTPX che non verifica i certificati SSL
 # Questo è l'equivalente di verify=False
@@ -183,7 +187,7 @@ async def a_get_enriched_query(
 
     result_content = None
 
-    try:
+    try:        
         prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
         logger.track_event(
