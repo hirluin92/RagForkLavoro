@@ -26,6 +26,7 @@ stages:
     commonVariableGroup: AZ00040_funapp-rag-TEST
     linuxPoolName: linuxpoolcontainersvil
     zipArtifacts: true
+    pythonVersion: "3.12"
     installDependencies: true
     enableAdditionalCopy: true
     additionalSourceFolderToCopy: $(build.SourcesDirectory)
