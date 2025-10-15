@@ -27,7 +27,7 @@ stages:
     linuxPoolName: linuxpoolcontainersvil
     zipArtifacts: true
     installDependencies: true
-    pythonVersion: "v3.12"
+    pythonVersion: "3.12"
     enableAdditionalCopy: true
     additionalSourceFolderToCopy: $(build.SourcesDirectory)
     additionalTargetFolder: $(build.artifactstagingdirectory)
@@ -52,7 +52,6 @@ stages:
         sonar.sources=$(System.DefaultWorkingDirectory)
         sonar.projectBaseDir=$(System.DefaultWorkingDirectory)/
         sonar.coverageReportPaths=$(System.DefaultWorkingDirectory)/publish/SonarQube.xml
-
 
 - template: release-stages/azure/release-stages.yaml@CommonTemplates
   parameters:
