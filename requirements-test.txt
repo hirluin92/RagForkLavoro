@@ -43,7 +43,7 @@ iniconfig==2.0.0
 isodate==0.6.1
 jsonpatch==1.33
 jsonpointer==3.0.0
-langchain-core==0.2.30
+langchain-core==0.2.29
 langchain-mistralai==0.1.10
 langchain-openai==0.1.17
 langsmith==0.1.93
