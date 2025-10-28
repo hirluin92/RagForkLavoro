@@ -8,7 +8,7 @@ from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 import constants.llm as llm_const
 from models.apis.rag_query_response_body import RagQueryResponse
-
+from models.configurations.llm_consumer import LLMConsumer
 from models.services.openai_domus_response import DomusAnswerResponse
 from models.services.openai_intent_response import ClassifyIntentResponse
 from services.mistralai import a_get_answer_from_domus, a_get_enriched_query, a_get_intent_from_enriched_query
@@ -36,11 +36,13 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
                          prompt_data: PromptEditorResponseBody,
                         logger: Logger,
                         session: ClientSession, 
+                        consumer: LLMConsumer,
                         domusData: str = None)-> RagQueryResponse:
         query_result = await a_execute_query(request,
                                              prompt_data,
                                              logger,
                                              session,
+                                             consumer,
                                              domusData=domusData)
         return query_result
     

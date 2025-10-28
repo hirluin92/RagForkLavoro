@@ -809,7 +809,7 @@ class TestAiQueryService(AiQueryServiceBase):
     def model_id(cls):
         return "test-model"
 
-    async def a_do_query(self, request, prompt_data, logger, session, domusData=None):
+    async def a_do_query(self, request, prompt_data, logger, session, consumer,  domusData=None):
         return RagQueryResponse()
 
     async def a_do_query_enrichment(self, request, prompt_data, logger):
