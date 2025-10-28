@@ -5,6 +5,7 @@ from aiohttp import ClientSession, ClientResponse
 from logics.rag_orchestrator import check_msd_question
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
 from models.apis.rag_orchestrator_response import RagOrchestratorResponse
+from models.configurations.llm_consumer import LLMConsumer
 from services.domus import a_get_form_applications_by_fiscal_code, a_get_form_application_details
 from models.apis.domus_form_applications_by_fiscal_code_request import DomusFormApplicationsByFiscalCodeRequest
 from models.apis.domus_form_applications_by_fiscal_code_response import DomusFormApplicationsByFiscalCodeResponse
@@ -213,6 +214,7 @@ async def test_check_msd_question_no_domus_no_protocollo(mocker, monkeypatch):
     mock_tag_info = mocker.Mock()
     mock_logger = mocker.Mock()
     mock_session = AsyncMock(spec=ClientSession)
+    mock_consumer = mocker.Mock(spec=LLMConsumer("test_consumer", "1234567890abcdef"))
 
     # Act
     result = await check_msd_question(
@@ -225,7 +227,8 @@ async def test_check_msd_question_no_domus_no_protocollo(mocker, monkeypatch):
         completion_prompt_data=mock_prompt,
         tag_info=mock_tag_info,
         logger=mock_logger,
-        session=mock_session
+        session=mock_session,
+        consumer=mock_consumer
     )
 
     # Assert
