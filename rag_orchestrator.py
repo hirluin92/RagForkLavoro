@@ -21,7 +21,6 @@ from utils.settings import (
 
 bp = func.Blueprint()
 
-
 @bp.route(route="rag", auth_level=func.AuthLevel.FUNCTION, methods=["POST"])
 async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     with LoggerBuilder(__name__, context) as logger:
@@ -66,7 +65,7 @@ async def a_rag_orchestrator(req: func.HttpRequest, context: func.Context) -> fu
                     "callerService": consumer.name
                 },
             )
-            
+
             async with aiohttp.ClientSession(raise_for_status=True, trust_env=True) as session:
                 query_response = await a_get_query_response(request, logger, session, consumer)
                 json_content = json.dumps(query_response, ensure_ascii=False, default=lambda x: x.__dict__).encode(

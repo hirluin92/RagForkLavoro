@@ -21,6 +21,10 @@ import constants.llm as llm_const
 from services.prompt_editor import a_get_prompt_from_resolve_jinja_template_api, build_prompt_messages
 from utils.settings import get_openai_settings
 
+#Bypassa il passaggio del "Context" che genera un errore bloccante su python>=3.12
+import langchain_core.runnables.utils as asyncioord
+asyncioord.asyncio_accepts_context = lambda: False
+
 # --- SOLUZIONE NON SICURA: SOLO PER SVILUPPO, MAI IN PRODUZIONE ---
 # Crea un client HTTPX che non verifica i certificati SSL
 # Questo è l'equivalente di verify=False
@@ -111,10 +115,20 @@ async def a_get_answer_from_context(
     try:
         prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
+        # logger.track_event(
+        #     event_types.llm_answer_generation_response_event,
+        #     {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+        # )
+
         logger.track_event(
             event_types.llm_answer_generation_response_event,
-            {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+            {"answer": prompt_and_model_result.json().encode("utf-8")},
         )
+
+        # logger.track_event(
+        #     event_types.llm_answer_generation_response_event,
+        #     {"answer": json.dumps(prompt_and_model_result.dict(), ensure_ascii=False).encode("utf-8")},
+        # )
 
         result_content_parser = PydanticOutputParser(pydantic_object=RagResponseOutputParser)
         result_content = await result_content_parser.ainvoke(prompt_and_model_result)
@@ -183,12 +197,18 @@ async def a_get_enriched_query(
 
     result_content = None
 
-    try:
+    try:   
+        # TEST 1         
         prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
+
+        # logger.track_event(
+        #     event_types.llm_enrichment_response_event,
+        #     {"enrichedQuery": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+        # )
 
         logger.track_event(
             event_types.llm_enrichment_response_event,
-            {"enrichedQuery": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+            {"enrichedQuery": prompt_and_model_result.json().encode("utf-8")},
         )
 
         result_content_parser = PydanticOutputParser(pydantic_object=EnrichmentQueryResponse)
@@ -253,9 +273,14 @@ async def a_get_intent_from_enriched_query(
     try:
         prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
+        # logger.track_event(
+        #     event_types.llm_intent_classification_response,
+        #     {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+        # )
+
         logger.track_event(
             event_types.llm_intent_classification_response,
-            {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+            {"answer": prompt_and_model_result.json().encode("utf-8")},
         )
 
         result_content_parser = PydanticOutputParser(pydantic_object=ClassifyIntentResponse)
@@ -316,9 +341,14 @@ async def a_get_answer_from_domus(
     try:
         prompt_and_model_result = await chain.ainvoke(dict_langchain_variables)
 
+        # logger.track_event(
+        #     event_types.llm_domus_answer_generation_response,
+        #     {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+        # )
+
         logger.track_event(
             event_types.llm_domus_answer_generation_response,
-            {"answer": prompt_and_model_result.json(ensure_ascii=False).encode("utf-8")},
+            {"answer": prompt_and_model_result.json().encode("utf-8")},
         )
 
         result_content_parser = PydanticOutputParser(pydantic_object=DomusAnswerResponse)
