@@ -202,6 +202,46 @@ async def test_cqa_answer_out_of_context(mocker, monkeypatch):
     assert result == None
     logger.track_event.assert_called_once()
 
+@pytest.mark.asyncio
+async def test_cqa_answer_no_project(mocker, monkeypatch):
+
+    set_mock_env(monkeypatch)
+
+    query = "Come è il tempo?"
+    logger = mocker.Mock(spec=Logger)
+
+    mock_response = mocker.Mock()
+    mock_response.answers = [mocker.Mock(answer=os.getenv("CQA_DefaultNoResultAnswer"), confidence=0.1)]
+    mock_response.serialize.return_value = "{ 'fake' : 'fake' }"
+    cqa_mock_client = mocker.AsyncMock()
+    cqa_mock_client.get_answers.return_value = mock_response
+    mocker.patch("services.cqa.get_question_answering_client", return_value=cqa_mock_client)
+
+    # Mock del metodo a_get_cqa_project_by_topic
+    mocker.patch("services.cqa.a_get_cqa_project_by_topic", return_value=(None, "mock_deployment"))
+
+    result = await a_do_query(query, "", logger)
+
+    assert result == None
+
+@pytest.mark.asyncio
+async def test_cqa_answer_exception(mocker, monkeypatch):
+
+    set_mock_env(monkeypatch)
+
+    query = "Come è il tempo?"
+    logger = mocker.Mock(spec=Logger)
+
+    mock_response = mocker.Mock()
+    mock_response.answers = [mocker.Mock(answer=os.getenv("CQA_DefaultNoResultAnswer"), confidence=0.1)]
+    mock_response.serialize.return_value = "{ 'fake' : 'fake' }"
+    cqa_mock_client = mocker.AsyncMock()
+    cqa_mock_client.get_answers.return_value = mock_response
+    
+    with mocker.patch("services.cqa.get_question_answering_client", side_effect=Exception("Test exception")):
+        with pytest.raises(Exception) as exc_info:
+            await a_do_query(query, "", logger)
+
 
 # ---------------------------------------
 # Fake classes per simulare il comportamento di aioodbc
@@ -348,8 +388,44 @@ async def test_rag_orchestrator_cqa_success(mocker, monkeypatch):
     assert isinstance(result, RagOrchestratorResponse)
     assert result.answer_text
     assert result.cqa_data
-    assert result.llm_data == None
+    assert result.llm_data == None   
 
+@pytest.mark.asyncio
+async def test_rag_orchestrator_no_tags(mocker, monkeypatch):
+    set_mock_env(monkeypatch)
+    logger = mocker.Mock(spec=Logger)
+    mock_session = mocker.Mock()
+
+    mock_cqa_do_query_result = CQAResponse(text_answer="L'assegno unico è...", cqa_data={"fake": "fake"})
+    mocker.patch("logics.rag_orchestrator.cqa_do_query", return_value=mock_cqa_do_query_result)
+
+    # Simula le impostazioni MSSQL
+    dummy_settings = SimpleNamespace(connection_string="dummy_connection_string")
+    monkeypatch.setattr("services.mssql.get_mssql_settings", lambda: dummy_settings)
+
+    # Prepara dei fake record da restituire tramite fetchall()
+    fake_records = []
+    fake_cursor = FakeCursor(fetchall_return=fake_records)
+    # Sostituisce create_pool con il nostro fake (verrà usato nel context manager)
+    monkeypatch.setattr("services.mssql.create_pool", lambda dsn, minsize: FakePoolContextManager(fake_cursor))
+
+    # Importa e chiama la funzione da testare
+    from services.mssql import a_get_tags_by_tag_names
+
+    result = await a_get_tags_by_tag_names(logger, [])
+
+    request = RagOrchestratorRequest(
+        query="Cosa è l'assegno unico?",
+        llm_model_id="OPENAI",
+        tags=["auu"],
+        environment="staging",
+        configuration=RagConfiguration(enable_cqa=True, enable_enrichment=True),
+    )
+    
+    with pytest.raises(Exception):
+        result = await logics.rag_orchestrator.a_get_query_response(
+            request, logger, mock_session, consumer=LLMConsumer("test_consumer", "1234567890abcdef")
+        )
 
 @pytest.mark.asyncio
 async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
