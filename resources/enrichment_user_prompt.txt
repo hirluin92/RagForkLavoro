@@ -1,0 +1,8 @@
+[TOPIC]
+{topic}
+
+[CONVERSATION TRANSCRIPT]:
+{chat_history}
+
+[FOLLOW UP QUESTION]: 
+{question}

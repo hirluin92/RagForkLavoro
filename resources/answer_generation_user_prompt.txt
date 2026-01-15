@@ -1,0 +1,9 @@
+[QUESTION]: 
+{question}
+
+[CONTEXT]:
+{context}
+[END CONTEXT]
+
+Provide your output in JSON format
+[ANSWER]:
