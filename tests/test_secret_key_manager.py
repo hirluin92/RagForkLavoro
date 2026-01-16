@@ -58,9 +58,8 @@ async def test_a_get_config_for_source_success(mocker, monkeypatch):
     mocker.patch("utils.secret_key_manager.KeyVaultSettings", return_value=mock_kv_settings)
     
     # Mock blob storage
-    async def mock_get_blob_content(*args, **kwargs):
-        return '[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret/version123", "model": "gpt-4o", "api_version": "2024-08-01-preview"}]'
-    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", side_effect=mock_get_blob_content)
+    mock_blob = AsyncMock(return_value='[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret/version123", "model": "gpt-4o", "api_version": "2024-08-01-preview"}]')
+    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", mock_blob)
 
     # Mock Key Vault
     mock_secret_obj = MagicMock()
@@ -89,9 +88,8 @@ async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     mocker.patch("utils.secret_key_manager.KeyVaultSettings", return_value=mock_kv_settings)
     
     # Mock blob storage
-    async def mock_get_blob_content(*args, **kwargs):
-        return '[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o-mini", "version": "2024-02-15-preview"}]'
-    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", side_effect=mock_get_blob_content)
+    mock_blob = AsyncMock(return_value='[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o-mini", "version": "2024-02-15-preview"}]')
+    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", mock_blob)
 
     # Mock Key Vault
     mock_secret_obj = MagicMock()
@@ -120,9 +118,8 @@ async def test_a_get_config_for_source_not_found(mocker):
     mocker.patch("utils.secret_key_manager.KeyVaultSettings", return_value=mock_kv_settings)
     
     # Mock blob storage
-    async def mock_get_blob_content(*args, **kwargs):
-        return '[{"source_identifier": "other-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret"}]'
-    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", side_effect=mock_get_blob_content)
+    mock_blob = AsyncMock(return_value='[{"source_identifier": "other-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret"}]')
+    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", mock_blob)
 
     # Act & Assert
     with pytest.raises(ValueError, match=r"no source identifier found.*test-service"):
@@ -139,9 +136,8 @@ async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     mocker.patch("utils.secret_key_manager.KeyVaultSettings", return_value=mock_kv_settings)
     
     # Mock blob storage
-    async def mock_get_blob_content(*args, **kwargs):
-        return '[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o", "api_version": "2024-08-01-preview"}]'
-    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", side_effect=mock_get_blob_content)
+    mock_blob = AsyncMock(return_value='[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o", "api_version": "2024-08-01-preview"}]')
+    mocker.patch("utils.secret_key_manager.a_get_blob_content_from_container", mock_blob)
 
     # Mock Key Vault per sollevare un'eccezione quando viene chiamato get_secret
     # Usa FakeSecretClient con get_secret_side_effect per sollevare un'eccezione
