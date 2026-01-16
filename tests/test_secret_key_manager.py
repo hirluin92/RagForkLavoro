@@ -1,15 +1,24 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from utils.secret_key_manager import a_get_config_for_source, a_get_secret_key, extract_keyvault_info
-from aiocache import caches
+
+
+def async_return(result):
+    """Helper per creare una coroutine che ritorna un valore"""
+    async def _async_return(*args, **kwargs):
+        return result
+    return _async_return
 
 
 @pytest.fixture(autouse=True)
-async def clear_cache():
-    """Pulisce la cache prima di ogni test"""
-    await caches.get('default').clear()
-    yield
-    await caches.get('default').clear()
+def disable_cache(mocker):
+    """Disabilita il decorator @cached per tutti i test"""
+    def passthrough_decorator(ttl=None):
+        def decorator(func):
+            return func
+        return decorator
+    
+    mocker.patch("utils.secret_key_manager.cached", passthrough_decorator)
 
 
 @pytest.mark.asyncio
