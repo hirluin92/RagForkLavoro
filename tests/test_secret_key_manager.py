@@ -82,9 +82,9 @@ async def test_a_get_config_for_source_success(mocker):
         def __init__(self, vault_url=None, credential=None):
             self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
         async def get_secret(self, *args, **kwargs):
             return await self._fake.get_secret(*args, **kwargs)
     
@@ -92,9 +92,9 @@ async def test_a_get_config_for_source_success(mocker):
         def __init__(self, *args, **kwargs):
             self._fake = FakeDefaultAzureCredential(*args, **kwargs)
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
 
     mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
@@ -131,9 +131,9 @@ async def test_a_get_config_for_source_with_version_field(mocker):
         def __init__(self, vault_url=None, credential=None):
             self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
         async def get_secret(self, *args, **kwargs):
             return await self._fake.get_secret(*args, **kwargs)
     
@@ -141,9 +141,9 @@ async def test_a_get_config_for_source_with_version_field(mocker):
         def __init__(self, *args, **kwargs):
             self._fake = FakeDefaultAzureCredential(*args, **kwargs)
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
 
     mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
@@ -197,9 +197,9 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
         def __init__(self, vault_url=None, credential=None):
             self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error"))
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
         async def get_secret(self, *args, **kwargs):
             return await self._fake.get_secret(*args, **kwargs)
     
@@ -207,9 +207,9 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
         def __init__(self, *args, **kwargs):
             self._fake = FakeDefaultAzureCredential(*args, **kwargs)
         async def __aenter__(self):
-            return await self._fake.__aenter__()
+            return self
         async def __aexit__(self, *args):
-            return await self._fake.__aexit__(*args)
+            return False
 
     mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
