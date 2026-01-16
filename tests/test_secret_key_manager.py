@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 from utils.secret_key_manager import a_get_config_for_source, a_get_secret_key, extract_keyvault_info
 
 
@@ -90,9 +90,11 @@ async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     mocker.patch("utils.secret_key_manager.KeyVaultSettings", return_value=mock_kv_settings)
     
     # Mock blob storage
-    async def mock_get_blob_content(*args, **kwargs):
-        return '[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o-mini", "version": "2024-02-15-preview"}]'
-    monkeypatch.setattr("utils.secret_key_manager.a_get_blob_content_from_container", mock_get_blob_content)
+    mocker.patch(
+        "utils.secret_key_manager.a_get_blob_content_from_container",
+        new_callable=AsyncMock,
+        return_value='[{"source_identifier": "test-service", "secret": "https://test-vault.vault.azure.net/secrets/test-secret", "model": "gpt-4o-mini", "version": "2024-02-15-preview"}]'
+    )
 
     # Mock Key Vault
     mock_secret_obj = MagicMock()
