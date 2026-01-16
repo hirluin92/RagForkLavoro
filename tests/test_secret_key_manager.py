@@ -46,27 +46,6 @@ class FakeDefaultAzureCredential:
         return False
 
 
-class FakeSecretClientFactory:
-    """Factory callable che crea FakeSecretClient instances"""
-    
-    def __init__(self, secret_obj=None, get_secret_side_effect=None):
-        self.secret_obj = secret_obj
-        self.get_secret_side_effect = get_secret_side_effect
-    
-    def __call__(self, vault_url=None, credential=None):
-        return FakeSecretClient(
-            vault_url=vault_url,
-            credential=credential,
-            secret_obj=self.secret_obj,
-            get_secret_side_effect=self.get_secret_side_effect
-        )
-
-
-class FakeDefaultAzureCredentialFactory:
-    """Factory callable che crea FakeDefaultAzureCredential instances"""
-    
-    def __call__(self, *args, **kwargs):
-        return FakeDefaultAzureCredential(*args, **kwargs)
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +60,7 @@ def disable_cache(mocker):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_success(mocker, monkeypatch):
+async def test_a_get_config_for_source_success(mocker):
     """Test che a_get_config_for_source recupera correttamente model e api_version dal JSON"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -99,8 +78,14 @@ async def test_a_get_config_for_source_success(mocker, monkeypatch):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret-value"
 
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", FakeSecretClientFactory(secret_obj=mock_secret_obj))
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", FakeDefaultAzureCredentialFactory())
+    def make_secret_client(vault_url=None, credential=None):
+        return FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+    
+    def make_credential(*args, **kwargs):
+        return FakeDefaultAzureCredential(*args, **kwargs)
+
+    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -112,7 +97,7 @@ async def test_a_get_config_for_source_success(mocker, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
+async def test_a_get_config_for_source_with_version_field(mocker):
     """Test che a_get_config_for_source supporta anche il campo 'version' oltre 'api_version'"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -130,8 +115,14 @@ async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret"
 
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", FakeSecretClientFactory(secret_obj=mock_secret_obj))
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", FakeDefaultAzureCredentialFactory())
+    def make_secret_client(vault_url=None, credential=None):
+        return FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+    
+    def make_credential(*args, **kwargs):
+        return FakeDefaultAzureCredential(*args, **kwargs)
+
+    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -163,7 +154,7 @@ async def test_a_get_config_for_source_not_found(mocker):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
+async def test_a_get_config_for_source_keyvault_failure(mocker):
     """Test che a_get_config_for_source gestisce correttamente il fallimento del Key Vault"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -178,8 +169,14 @@ async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     )
 
     # Mock Key Vault per sollevare un'eccezione
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", FakeSecretClientFactory(get_secret_side_effect=Exception("Key Vault error")))
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", FakeDefaultAzureCredentialFactory())
+    def make_secret_client(vault_url=None, credential=None):
+        return FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error"))
+    
+    def make_credential(*args, **kwargs):
+        return FakeDefaultAzureCredential(*args, **kwargs)
+
+    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
