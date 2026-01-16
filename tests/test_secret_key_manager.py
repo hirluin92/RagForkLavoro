@@ -1,20 +1,12 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import MagicMock
 from utils.secret_key_manager import a_get_config_for_source, a_get_secret_key, extract_keyvault_info
-
-
-def async_return(result):
-    """Helper per creare una coroutine che ritorna un valore"""
-    async def _async_return(*args, **kwargs):
-        return result
-    return _async_return
 
 
 class FakeSecretClient:
     """Fake SecretClient che supporta async context manager"""
     
     def __init__(self, vault_url=None, credential=None, secret_obj=None, get_secret_side_effect=None):
-        # Accetta i parametri del costruttore reale ma li ignora
         self.vault_url = vault_url
         self.credential = credential
         self.secret_obj = secret_obj
@@ -36,7 +28,6 @@ class FakeDefaultAzureCredential:
     """Fake DefaultAzureCredential che supporta async context manager"""
     
     def __init__(self, *args, **kwargs):
-        # Accetta qualsiasi parametro del costruttore ma li ignora
         pass
     
     async def __aenter__(self):
@@ -44,8 +35,6 @@ class FakeDefaultAzureCredential:
     
     async def __aexit__(self, exc_type, exc, tb):
         return False
-
-
 
 
 @pytest.fixture(autouse=True)
@@ -78,26 +67,9 @@ async def test_a_get_config_for_source_success(mocker, monkeypatch):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret-value"
 
-    class MockSecretClient:
-        def __init__(self, vault_url=None, credential=None):
-            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-        async def get_secret(self, *args, **kwargs):
-            return await self._fake.get_secret(*args, **kwargs)
-    
-    class MockDefaultAzureCredential:
-        def __init__(self, *args, **kwargs):
-            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", MockSecretClient)
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", MockDefaultAzureCredential)
+    # Sostituisci i costruttori con funzioni che restituiscono le classi fake
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", lambda vault_url, credential: FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj))
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", lambda *args, **kwargs: FakeDefaultAzureCredential(*args, **kwargs))
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -127,26 +99,9 @@ async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret"
 
-    class MockSecretClient:
-        def __init__(self, vault_url=None, credential=None):
-            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-        async def get_secret(self, *args, **kwargs):
-            return await self._fake.get_secret(*args, **kwargs)
-    
-    class MockDefaultAzureCredential:
-        def __init__(self, *args, **kwargs):
-            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", MockSecretClient)
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", MockDefaultAzureCredential)
+    # Sostituisci i costruttori con funzioni che restituiscono le classi fake
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", lambda vault_url, credential: FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj))
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", lambda *args, **kwargs: FakeDefaultAzureCredential(*args, **kwargs))
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -193,26 +148,9 @@ async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     )
 
     # Mock Key Vault per sollevare un'eccezione
-    class MockSecretClient:
-        def __init__(self, vault_url=None, credential=None):
-            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error"))
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-        async def get_secret(self, *args, **kwargs):
-            return await self._fake.get_secret(*args, **kwargs)
-    
-    class MockDefaultAzureCredential:
-        def __init__(self, *args, **kwargs):
-            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, *args):
-            return False
-
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", MockSecretClient)
-    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", MockDefaultAzureCredential)
+    # Sostituisci i costruttori con funzioni che restituiscono le classi fake
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", lambda vault_url, credential: FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error")))
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", lambda *args, **kwargs: FakeDefaultAzureCredential(*args, **kwargs))
 
     # Act
     result = await a_get_config_for_source("test-service")
