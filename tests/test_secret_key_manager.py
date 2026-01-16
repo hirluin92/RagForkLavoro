@@ -40,14 +40,14 @@ async def test_a_get_config_for_source_success(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret-value"
 
-    mock_kv_client = AsyncMock()
+    mock_kv_client = MagicMock()
     mock_kv_client.get_secret = AsyncMock(return_value=mock_secret_obj)
     mock_kv_client.__aenter__ = AsyncMock(return_value=mock_kv_client)
-    mock_kv_client.__aexit__ = AsyncMock(return_value=None)
+    mock_kv_client.__aexit__ = AsyncMock(return_value=False)
 
-    mock_credential = AsyncMock()
+    mock_credential = MagicMock()
     mock_credential.__aenter__ = AsyncMock(return_value=mock_credential)
-    mock_credential.__aexit__ = AsyncMock(return_value=None)
+    mock_credential.__aexit__ = AsyncMock(return_value=False)
 
     mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
@@ -80,14 +80,14 @@ async def test_a_get_config_for_source_with_version_field(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret"
 
-    mock_kv_client = AsyncMock()
+    mock_kv_client = MagicMock()
     mock_kv_client.get_secret = AsyncMock(return_value=mock_secret_obj)
     mock_kv_client.__aenter__ = AsyncMock(return_value=mock_kv_client)
-    mock_kv_client.__aexit__ = AsyncMock(return_value=None)
+    mock_kv_client.__aexit__ = AsyncMock(return_value=False)
 
-    mock_credential = AsyncMock()
+    mock_credential = MagicMock()
     mock_credential.__aenter__ = AsyncMock(return_value=mock_credential)
-    mock_credential.__aexit__ = AsyncMock(return_value=None)
+    mock_credential.__aexit__ = AsyncMock(return_value=False)
 
     mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
@@ -98,6 +98,7 @@ async def test_a_get_config_for_source_with_version_field(mocker):
     # Assert
     assert result["api_version"] == "2024-02-15-preview"
     assert result["model"] == "gpt-4o-mini"
+    assert result["secret"] == "test-secret"
 
 
 @pytest.mark.asyncio
@@ -116,7 +117,7 @@ async def test_a_get_config_for_source_not_found(mocker):
     )
 
     # Act & Assert
-    with pytest.raises(ValueError, match="no source identifier found"):
+    with pytest.raises(ValueError, match=r"no source identifier found.*test-service"):
         await a_get_config_for_source("test-service")
 
 
@@ -136,14 +137,14 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
     )
 
     # Mock Key Vault per sollevare un'eccezione
-    mock_kv_client = AsyncMock()
+    mock_kv_client = MagicMock()
     mock_kv_client.get_secret = AsyncMock(side_effect=Exception("Key Vault error"))
     mock_kv_client.__aenter__ = AsyncMock(return_value=mock_kv_client)
-    mock_kv_client.__aexit__ = AsyncMock(return_value=None)
+    mock_kv_client.__aexit__ = AsyncMock(return_value=False)
 
-    mock_credential = AsyncMock()
+    mock_credential = MagicMock()
     mock_credential.__aenter__ = AsyncMock(return_value=mock_credential)
-    mock_credential.__aexit__ = AsyncMock(return_value=None)
+    mock_credential.__aexit__ = AsyncMock(return_value=False)
 
     mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
     mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
