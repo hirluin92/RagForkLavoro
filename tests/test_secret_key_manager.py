@@ -148,13 +148,8 @@ async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     )
 
     # Mock Key Vault per sollevare un'eccezione quando viene chiamato get_secret
-    # Creiamo una classe fake che solleva sempre un'eccezione
-    class FailingSecretClient(FakeSecretClient):
-        async def get_secret(self, secret_name, version=None):
-            raise Exception("Key Vault error")
-    
-    # Sostituisci i costruttori con funzioni che restituiscono le classi fake
-    monkeypatch.setattr("utils.secret_key_manager.SecretClient", lambda vault_url, credential: FailingSecretClient(vault_url=vault_url, credential=credential))
+    # Usa FakeSecretClient con get_secret_side_effect per sollevare un'eccezione
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", lambda vault_url, credential: FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error")))
     monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", lambda *args, **kwargs: FakeDefaultAzureCredential(*args, **kwargs))
 
     # Act
