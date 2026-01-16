@@ -1,6 +1,15 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from utils.secret_key_manager import a_get_config_for_source, a_get_secret_key, extract_keyvault_info
+from aiocache import caches
+
+
+@pytest.fixture(autouse=True)
+async def clear_cache():
+    """Pulisce la cache prima di ogni test"""
+    await caches.get('default').clear()
+    yield
+    await caches.get('default').clear()
 
 
 @pytest.mark.asyncio
