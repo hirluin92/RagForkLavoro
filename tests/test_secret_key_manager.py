@@ -58,7 +58,7 @@ def disable_cache(mocker):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_success(mocker):
+async def test_a_get_config_for_source_success(mocker, monkeypatch):
     """Test che a_get_config_for_source recupera correttamente model e api_version dal JSON"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -82,8 +82,8 @@ async def test_a_get_config_for_source_success(mocker):
     def make_fake_credential(*args, **kwargs):
         return FakeDefaultAzureCredential(*args, **kwargs)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_fake_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_fake_credential)
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", make_fake_kv_client)
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", make_fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -95,7 +95,7 @@ async def test_a_get_config_for_source_success(mocker):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_with_version_field(mocker):
+async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     """Test che a_get_config_for_source supporta anche il campo 'version' oltre 'api_version'"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -119,8 +119,8 @@ async def test_a_get_config_for_source_with_version_field(mocker):
     def make_fake_credential(*args, **kwargs):
         return FakeDefaultAzureCredential(*args, **kwargs)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_fake_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_fake_credential)
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", make_fake_kv_client)
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", make_fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -152,7 +152,7 @@ async def test_a_get_config_for_source_not_found(mocker):
 
 
 @pytest.mark.asyncio
-async def test_a_get_config_for_source_keyvault_failure(mocker):
+async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     """Test che a_get_config_for_source gestisce correttamente il fallimento del Key Vault"""
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
@@ -173,8 +173,8 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
     def make_fake_credential(*args, **kwargs):
         return FakeDefaultAzureCredential(*args, **kwargs)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_fake_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_fake_credential)
+    monkeypatch.setattr("utils.secret_key_manager.SecretClient", make_fake_kv_client)
+    monkeypatch.setattr("utils.secret_key_manager.DefaultAzureCredential", make_fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
