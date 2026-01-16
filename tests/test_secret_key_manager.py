@@ -10,6 +10,35 @@ def async_return(result):
     return _async_return
 
 
+class FakeSecretClient:
+    """Fake SecretClient che supporta async context manager"""
+    
+    def __init__(self, secret_obj=None, get_secret_side_effect=None):
+        self.secret_obj = secret_obj
+        self.get_secret_side_effect = get_secret_side_effect
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+    
+    async def get_secret(self, secret_name, version=None):
+        if self.get_secret_side_effect:
+            raise self.get_secret_side_effect
+        return self.secret_obj
+
+
+class FakeDefaultAzureCredential:
+    """Fake DefaultAzureCredential che supporta async context manager"""
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
 @pytest.fixture(autouse=True)
 def disable_cache(mocker):
     """Disabilita il decorator @cached per tutti i test"""
@@ -40,13 +69,11 @@ async def test_a_get_config_for_source_success(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret-value"
 
-    mock_kv_client = AsyncMock()
-    mock_kv_client.get_secret = AsyncMock(return_value=mock_secret_obj)
+    fake_kv_client = FakeSecretClient(secret_obj=mock_secret_obj)
+    fake_credential = FakeDefaultAzureCredential()
 
-    mock_credential = AsyncMock()
-
-    mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", return_value=fake_kv_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -76,13 +103,11 @@ async def test_a_get_config_for_source_with_version_field(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret"
 
-    mock_kv_client = AsyncMock()
-    mock_kv_client.get_secret = AsyncMock(return_value=mock_secret_obj)
+    fake_kv_client = FakeSecretClient(secret_obj=mock_secret_obj)
+    fake_credential = FakeDefaultAzureCredential()
 
-    mock_credential = AsyncMock()
-
-    mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", return_value=fake_kv_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -129,13 +154,11 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
     )
 
     # Mock Key Vault per sollevare un'eccezione
-    mock_kv_client = AsyncMock()
-    mock_kv_client.get_secret = AsyncMock(side_effect=Exception("Key Vault error"))
+    fake_kv_client = FakeSecretClient(get_secret_side_effect=Exception("Key Vault error"))
+    fake_credential = FakeDefaultAzureCredential()
 
-    mock_credential = AsyncMock()
-
-    mocker.patch("utils.secret_key_manager.SecretClient", return_value=mock_kv_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=mock_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", return_value=fake_kv_client)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", return_value=fake_credential)
 
     # Act
     result = await a_get_config_for_source("test-service")
