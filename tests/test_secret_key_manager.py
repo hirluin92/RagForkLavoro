@@ -78,14 +78,26 @@ async def test_a_get_config_for_source_success(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret-value"
 
-    def make_secret_client(vault_url=None, credential=None):
-        return FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+    class MockSecretClient:
+        def __init__(self, vault_url=None, credential=None):
+            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
+        async def get_secret(self, *args, **kwargs):
+            return await self._fake.get_secret(*args, **kwargs)
     
-    def make_credential(*args, **kwargs):
-        return FakeDefaultAzureCredential(*args, **kwargs)
+    class MockDefaultAzureCredential:
+        def __init__(self, *args, **kwargs):
+            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -115,14 +127,26 @@ async def test_a_get_config_for_source_with_version_field(mocker):
     mock_secret_obj = MagicMock()
     mock_secret_obj.value = "test-secret"
 
-    def make_secret_client(vault_url=None, credential=None):
-        return FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+    class MockSecretClient:
+        def __init__(self, vault_url=None, credential=None):
+            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, secret_obj=mock_secret_obj)
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
+        async def get_secret(self, *args, **kwargs):
+            return await self._fake.get_secret(*args, **kwargs)
     
-    def make_credential(*args, **kwargs):
-        return FakeDefaultAzureCredential(*args, **kwargs)
+    class MockDefaultAzureCredential:
+        def __init__(self, *args, **kwargs):
+            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
 
     # Act
     result = await a_get_config_for_source("test-service")
@@ -169,14 +193,26 @@ async def test_a_get_config_for_source_keyvault_failure(mocker):
     )
 
     # Mock Key Vault per sollevare un'eccezione
-    def make_secret_client(vault_url=None, credential=None):
-        return FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error"))
+    class MockSecretClient:
+        def __init__(self, vault_url=None, credential=None):
+            self._fake = FakeSecretClient(vault_url=vault_url, credential=credential, get_secret_side_effect=Exception("Key Vault error"))
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
+        async def get_secret(self, *args, **kwargs):
+            return await self._fake.get_secret(*args, **kwargs)
     
-    def make_credential(*args, **kwargs):
-        return FakeDefaultAzureCredential(*args, **kwargs)
+    class MockDefaultAzureCredential:
+        def __init__(self, *args, **kwargs):
+            self._fake = FakeDefaultAzureCredential(*args, **kwargs)
+        async def __aenter__(self):
+            return await self._fake.__aenter__()
+        async def __aexit__(self, *args):
+            return await self._fake.__aexit__(*args)
 
-    mocker.patch("utils.secret_key_manager.SecretClient", new=make_secret_client)
-    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=make_credential)
+    mocker.patch("utils.secret_key_manager.SecretClient", new=MockSecretClient)
+    mocker.patch("utils.secret_key_manager.DefaultAzureCredential", new=MockDefaultAzureCredential)
 
     # Act
     result = await a_get_config_for_source("test-service")
