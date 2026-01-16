@@ -21,10 +21,12 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
     
     async def a_do_query_enrichment(self, request: RagOrchestratorRequest,
                                     prompt_data: PromptEditorResponseBody,
-                            logger: Logger) -> EnrichmentQueryResponse:
+                            logger: Logger,
+                            consumer: LLMConsumer) -> EnrichmentQueryResponse:
         # Creazione chat history
         chat_history = self.extract_chat_history(request.interactions)
         topic = await self.get_topic_from_tags(logger, request.tags)
+        # Nota: MistralAI non usa il consumer, ma lo accetta per rispettare l'interfaccia base
         query_enrichment_result = await a_get_enriched_query(request.query,
                                                      topic,
                                                      chat_history,
@@ -47,11 +49,15 @@ class AiQueryServiceMistralAI(AiQueryServiceBase):
         return query_result
     
     async def a_compute_classify_intent_query(self, request: RagOrchestratorRequest, prompt_data: PromptEditorResponseBody,
-                            logger: Logger) -> ClassifyIntentResponse: 
+                            logger: Logger,
+                            consumer: LLMConsumer) -> ClassifyIntentResponse: 
+         # Nota: MistralAI non usa il consumer, ma lo accetta per rispettare l'interfaccia base
          result = await a_get_intent_from_enriched_query(request.query, prompt_data, logger)
          return result
     
     async def a_get_domus_answer(self, request: RagOrchestratorRequest, practice_detail: str, prompt_data: PromptEditorResponseBody,
-                            logger: Logger) -> DomusAnswerResponse:
+                            logger: Logger,
+                            consumer: LLMConsumer) -> DomusAnswerResponse:
+         # Nota: MistralAI non usa il consumer, ma lo accetta per rispettare l'interfaccia base
          result = await a_get_answer_from_domus(request.query, practice_detail, prompt_data, logger)
          return result

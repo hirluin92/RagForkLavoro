@@ -6,7 +6,7 @@ from services.logging import Logger
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from openai import APIConnectionError
 from exceptions.custom_exceptions import CustomPromptParameterError
@@ -33,16 +33,33 @@ asyncioord.asyncio_accepts_context = lambda: False
 #unsafe_httpx_async_client = httpx.AsyncClient(verify=False)  # fix locale -> set a True per portare in prod
 
 
-async def a_generate_embedding_from_text(text: str):
+async def a_generate_embedding_from_text(
+    text: str, 
+    deployment_model: Optional[str] = None,
+    api_version: Optional[str] = None,
+    secret: Optional[str] = None
+):
     """
     Generate an embedding from text
+    
+    Args:
+        text: Text to generate embedding from
+        deployment_model: Optional deployment model (falls back to settings if not provided)
+        api_version: Optional API version (falls back to settings if not provided)
+        secret: Optional API key (falls back to settings if not provided)
     """
     settings = get_openai_settings()
+    
+    # Usa parametri passati o fallback a settings
+    final_deployment = deployment_model or settings.embedding_deployment_model
+    final_api_version = api_version or settings.api_version
+    final_secret = secret or settings.embedding_key
+    
     embeddings = AzureOpenAIEmbeddings(
         azure_endpoint=settings.embedding_endpoint,
-        azure_deployment=settings.embedding_deployment_model,
-        api_key=settings.embedding_key,
-        api_version=settings.api_version,
+        azure_deployment=final_deployment,
+        api_key=final_secret,
+        api_version=final_api_version,
         check_embedding_ctx_length=False,
  #       http_async_client=unsafe_httpx_async_client,
     )
@@ -62,6 +79,10 @@ async def a_get_answer_from_context(
     Get an answer from a context
     """
     settings = get_openai_settings()
+
+    # Usa valori dal consumer se disponibili, altrimenti fallback a settings
+    deployment_model = consumer.deployment_model or settings.completion_deployment_model
+    api_version = consumer.api_version or settings.api_version
 
     context_json_string = [asdict(c) for c in context]
 
@@ -90,8 +111,8 @@ async def a_get_answer_from_context(
 
     llm = AzureChatOpenAI(
         azure_endpoint=settings.completion_endpoint,
-        azure_deployment=settings.completion_deployment_model,
-        api_version=settings.api_version,
+        azure_deployment=deployment_model,
+        api_version=api_version,
         api_key=consumer.completion_key,
         temperature=prompt_data.model_parameters.temperature,
         max_tokens=prompt_data.model_parameters.max_length,
@@ -103,8 +124,8 @@ async def a_get_answer_from_context(
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode("utf-8"),
         "endpoint": settings.completion_endpoint,
-        "deployment": settings.completion_deployment_model,
-        "api_version": settings.api_version,
+        "deployment": deployment_model,
+        "api_version": api_version,
         "temperature": prompt_data.model_parameters.temperature,
         "max_tokens": prompt_data.model_parameters.max_length,
         "caller_service": consumer.name,
@@ -159,6 +180,10 @@ async def a_get_enriched_query(
     """
     settings = get_openai_settings()
 
+    # Usa valori dal consumer se disponibili, altrimenti fallback a settings
+    deployment_model = consumer.deployment_model or settings.completion_deployment_model
+    api_version = consumer.api_version or settings.api_version
+
     template_data = {"question": question, "topic": topic, "chat": chat_history}
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
 
@@ -174,8 +199,8 @@ async def a_get_enriched_query(
 
     llm = AzureChatOpenAI(
         azure_endpoint=settings.completion_endpoint,
-        azure_deployment=settings.completion_deployment_model,
-        api_version=settings.api_version,
+        azure_deployment=deployment_model,
+        api_version=api_version,
         api_key=consumer.completion_key,
         temperature=prompt_data.model_parameters.temperature,
         max_tokens=prompt_data.model_parameters.max_length,
@@ -232,6 +257,10 @@ async def a_get_intent_from_enriched_query(
 ) -> ClassifyIntentResponse:
     settings = get_openai_settings()
 
+    # Usa valori dal consumer se disponibili, altrimenti fallback a settings
+    deployment_model = consumer.deployment_model or settings.completion_deployment_model
+    api_version = consumer.api_version or settings.api_version
+
     template_data = {"question": question}
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
 
@@ -247,8 +276,8 @@ async def a_get_intent_from_enriched_query(
 
     llm = AzureChatOpenAI(
         azure_endpoint=settings.completion_endpoint,
-        azure_deployment=settings.completion_deployment_model,
-        api_version=settings.api_version,
+        azure_deployment=deployment_model,
+        api_version=api_version,
         api_key=consumer.completion_key,
         temperature=prompt_data.model_parameters.temperature,
         max_tokens=prompt_data.model_parameters.max_length,
@@ -261,8 +290,8 @@ async def a_get_intent_from_enriched_query(
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode("utf-8"),
         "endpoint": settings.completion_endpoint,
-        "deployment": settings.completion_deployment_model,
-        "api_version": settings.api_version,
+        "deployment": deployment_model,
+        "api_version": api_version,
         "temperature": prompt_data.model_parameters.temperature,
         "max_tokens": prompt_data.model_parameters.max_length,
         "dict_langchain_variables": json.dumps(dict_langchain_variables, ensure_ascii=False).encode("utf-8"),
@@ -302,6 +331,10 @@ async def a_get_answer_from_domus(
 ) -> DomusAnswerResponse:
     settings = get_openai_settings()
 
+    # Usa valori dal consumer se disponibili, altrimenti fallback a settings
+    deployment_model = consumer.deployment_model or settings.completion_deployment_model
+    api_version = consumer.api_version or settings.api_version
+
     template_data = {"question": question, "practice_detail": practice_detail}
     resolved_jinja_prompt = await a_resolve_template(logger, prompt_data, template_data)
 
@@ -317,8 +350,8 @@ async def a_get_answer_from_domus(
 
     llm = AzureChatOpenAI(
         azure_endpoint=settings.completion_endpoint,
-        azure_deployment=settings.completion_deployment_model,
-        api_version=settings.api_version,
+        azure_deployment=deployment_model,
+        api_version=api_version,
         api_key=consumer.completion_key,
         temperature=prompt_data.model_parameters.temperature,
         max_tokens=prompt_data.model_parameters.max_length,
@@ -331,8 +364,8 @@ async def a_get_answer_from_domus(
     data_to_log = {
         "prompt_messages": json.dumps(prompt_messages, ensure_ascii=False).encode("utf-8"),
         "endpoint": settings.completion_endpoint,
-        "deployment": settings.completion_deployment_model,
-        "api_version": settings.api_version,
+        "deployment": deployment_model,
+        "api_version": api_version,
         "temperature": prompt_data.model_parameters.temperature,
         "max_tokens": prompt_data.model_parameters.max_length,
         "caller_service": consumer.name,

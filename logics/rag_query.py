@@ -49,7 +49,13 @@ async def a_execute_query(
     consumer: LLMConsumer,
     domusData: str = None,
 ) -> RagQueryResponse:
-    embedding = await openai_generate_embedding_from_text(request.query)
+    # Passa i parametri dal consumer alla funzione di embedding
+    embedding = await openai_generate_embedding_from_text(
+        request.query,
+        deployment_model=consumer.deployment_model,
+        api_version=consumer.api_version,
+        secret=consumer.completion_key
+    )
     search_result: SearchIndexResponse = await query_azure_ai_search(session, request, embedding, logger)
     search_result_context = build_question_context_from_search(search_result)
 
