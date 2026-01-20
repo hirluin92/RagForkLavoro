@@ -51,6 +51,9 @@ def disable_cache(mocker):
 @pytest.mark.asyncio
 async def test_a_get_config_for_source_success(mocker, monkeypatch):
     """Test che a_get_config_for_source recupera correttamente model e api_version dal JSON"""
+    a_get_config_for_source_cache = a_get_config_for_source.cache
+    await a_get_config_for_source_cache.clear()
+    
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
     mock_kv_settings.secret_map_container_name = "test-container"
@@ -81,6 +84,9 @@ async def test_a_get_config_for_source_success(mocker, monkeypatch):
 @pytest.mark.asyncio
 async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
     """Test che a_get_config_for_source supporta anche il campo 'version' oltre 'api_version'"""
+    a_get_config_for_source_cache = a_get_config_for_source.cache
+    await a_get_config_for_source_cache.clear()
+    
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
     mock_kv_settings.secret_map_container_name = "test-container"
@@ -111,6 +117,9 @@ async def test_a_get_config_for_source_with_version_field(mocker, monkeypatch):
 @pytest.mark.asyncio
 async def test_a_get_config_for_source_not_found(mocker):
     """Test che a_get_config_for_source solleva ValueError se source_identifier non trovato"""
+    a_get_config_for_source_cache = a_get_config_for_source.cache
+    await a_get_config_for_source_cache.clear()
+    
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
     mock_kv_settings.secret_map_container_name = "test-container"
@@ -129,6 +138,9 @@ async def test_a_get_config_for_source_not_found(mocker):
 @pytest.mark.asyncio
 async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
     """Test che a_get_config_for_source gestisce correttamente il fallimento del Key Vault"""
+    a_get_config_for_source_cache = a_get_config_for_source.cache
+    await a_get_config_for_source_cache.clear()
+    
     # Mock KeyVaultSettings
     mock_kv_settings = MagicMock()
     mock_kv_settings.secret_map_container_name = "test-container"
@@ -156,6 +168,11 @@ async def test_a_get_config_for_source_keyvault_failure(mocker, monkeypatch):
 @pytest.mark.asyncio
 async def test_a_get_secret_key_retrocompatibility(mocker):
     """Test che a_get_secret_key mantiene la retrocompatibilità"""
+    a_get_config_for_source_cache = a_get_config_for_source.cache
+    await a_get_config_for_source_cache.clear()
+    a_get_secret_key_cache = a_get_secret_key.cache
+    await a_get_secret_key_cache.clear()
+    
     # Arrange
     mocker.patch(
         "utils.secret_key_manager.a_get_config_for_source",
