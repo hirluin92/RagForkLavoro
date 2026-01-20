@@ -1,0 +1,1 @@
+MSD_TAGS_MAPPING = "msd_tags_mapping.json"
