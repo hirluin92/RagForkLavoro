@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Interaction(BaseModel):
@@ -25,6 +25,10 @@ class RagOrchestratorRequest(BaseModel):
     query: str
     lang: Optional[str] = "it"
     llm_model_id: str
+    model_name: str = Field(
+        ..., 
+        description="Nome deployment Azure OpenAI (es: 'INPS_gpt4o', 'gpt-4.1-mini')"
+    )
     tags: list[str] = []
     interactions: list[Interaction] = []
     environment: str = "production"

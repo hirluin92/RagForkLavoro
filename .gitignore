@@ -1,63 +1,128 @@
-bin
-obj
+# Azure Functions - CRITICO
+local.settings.json
+*.local.settings.json
+.python_packages/
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
+.funcignore
+
+# Azure/DevOps
+bin/
+obj/
+.azure/
 csx
 .vs
 edge
 Publish
-
 *.user
 *.suo
 *.cscfg
 *.Cache
 project.lock.json
-
 /packages
 /TestResults
-
 /tools/NuGet.exe
 /App_Data
 /secrets
 /data
 .secrets
 appsettings.json
-local.settings.json
 
-node_modules
-dist
-
-# Local python packages
-.python_packages/
-
-# Python Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Azurite artifacts
-__blobstorage__
-__queuestorage__
-__azurite_db*__.json
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+env.bak/
+venv.bak/
 
-# Pytest
+# Python Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Testing
 .pytest_cache/
 .coverage
-# VS code
-.vscode/
-
-#PyCharm
-.idea/
-
-#coverage
+.coverage.*
 htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.cover
+*.py,cover
+test-results.xml
+coverage.xml
+*.log
+
+# IDEs
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Secrets - EXTRA SAFETY
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+credentials.json
+service-account*.json
+
+# Logs
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node modules (se presenti)
+node_modules/
+dist/
 
 # Test files
 /local_test

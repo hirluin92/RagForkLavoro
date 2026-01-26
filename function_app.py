@@ -1,4 +1,5 @@
 import logging
+import os
 import azure.functions as func
 from azure.monitor.opentelemetry import configure_azure_monitor
 import check_status
@@ -12,11 +13,16 @@ import move_files
 import chunking_empty_rows
 import convert_docx_to_md
 
-try:
-    configure_azure_monitor()
-except Exception as e:
-    logging.critical(f"Failed to configure Azure Monitor: {e}")
-    raise
+# Configura Azure Monitor solo se la connection string è disponibile (ambiente Azure)
+APPLICATIONINSIGHTS_CONNECTION_STRING = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+if APPLICATIONINSIGHTS_CONNECTION_STRING:
+    try:
+        configure_azure_monitor()
+        logging.info("Azure Monitor configured successfully")
+    except Exception as e:
+        logging.warning(f"Failed to configure Azure Monitor: {e}. Continuing without monitoring.")
+else:
+    logging.info("APPLICATIONINSIGHTS_CONNECTION_STRING not set. Azure Monitor disabled (local development).")
 
 logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(
     logging.WARNING)

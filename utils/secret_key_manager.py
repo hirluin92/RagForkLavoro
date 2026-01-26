@@ -11,6 +11,11 @@ import logging
 @cached(ttl=600)
 async def a_get_config_for_source(source_identifier: str) -> Dict[str, Optional[str]]:
     """
+    DEPRECATED: Sostituito da a_get_complete_config in utils.db_config.
+    
+    Questa funzione mantiene la logica basata su secretmap.json in Key Vault.
+    La nuova implementazione usa SQL Server con chiave composta (source_identifier + model_name).
+    
     Recupera configurazione completa per il source_identifier dal secretmap.json.
     
     Returns:
