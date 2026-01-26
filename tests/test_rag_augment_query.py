@@ -5,6 +5,7 @@ import pytest
 from tests.mock_env import set_mock_env
 from models.apis.prompt_editor_response_body import PromptEditorResponseBody
 from models.apis.rag_orchestrator_request import RagOrchestratorRequest
+from models.configurations.llm_consumer import LLMConsumer
 from tests.mock_logging import set_mock_logger_builder
 from rag_augment_query import a_augment_query as  rag_augmentQuery_endpoint
 import constants.llm as llm_constants
@@ -98,13 +99,17 @@ async def test_query_success(mocker, monkeypatch):
         "rag_augment_query.AiQueryServiceFactory.get_instance",
          return_value=mock_language_service
     )
+    # Mock handle_access_control per evitare connessioni reali al database
+    mock_consumer = LLMConsumer("test_consumer", "1234567890abcdef")
+    mocker.patch("rag_augment_query.handle_access_control", return_value=mock_consumer)
     
     req_body = {
         "query": "Aseno unco",
         "llm_model_id": "OPENAI",
         "interactions": [{ "question": "fake", "answer": "fake" }],
         "environment":"staging",
-        "prompt_editor": []
+        "prompt_editor": [],
+        "model_name": "INPS_gpt4o"
     }
 
     req = func.HttpRequest(method='POST',

@@ -158,7 +158,7 @@ async def test_get_from_index_ok(mocker, monkeypatch):
     mock_session = MockClientSession(mock_response)
 
     request = RagOrchestratorRequest(
-        query="Cosa è l'assegno unico?", llm_model_id="OPENAI", tags=["auu"], environment="staging"
+        query="Cosa è l'assegno unico?", llm_model_id="OPENAI", tags=["auu"], environment="staging", model_name="INPS_gpt4o"
     )
 
     # Act
@@ -193,7 +193,7 @@ async def test_execute_query_empty_search_results_ok(mocker, monkeypatch):
     mocker.patch("logics.rag_query.query_azure_ai_search", return_value=mock_search_result)
     mock_session = mocker.Mock()
 
-    request = RagOrchestratorRequest(query="query", llm_model_id="llm", tags=["auu"], environment="staging")
+    request = RagOrchestratorRequest(query="query", llm_model_id="llm", tags=["auu"], environment="staging", model_name="INPS_gpt4o")
 
     # Act
     result = await a_execute_query(
@@ -247,7 +247,7 @@ async def test_execute_query_mistralai_ok(mocker, monkeypatch):
     mock_session = mocker.Mock()
     set_mock_env(monkeypatch)
     request = RagOrchestratorRequest(
-        query="query", llm_model_id=llm_const.mistralai, tags=["auu"], environment="staging"
+        query="query", llm_model_id=llm_const.mistralai, tags=["auu"], environment="staging", model_name="INPS_gpt4o"
     )
 
     # Act
@@ -299,7 +299,7 @@ async def test_execute_query_openai_ok(mocker, monkeypatch):
     mocker.patch("logics.rag_query.openai_get_answer_from_context", return_value=mock_rag_response)
     mock_session = mocker.Mock()
 
-    request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.openai, tags=["auu"], environment="staging")
+    request = RagOrchestratorRequest(query="query", llm_model_id=llm_const.openai, tags=["auu"], environment="staging", model_name="INPS_gpt4o")
 
     # Act
     result = await a_execute_query(
@@ -317,7 +317,7 @@ async def test_query_ok(mocker, monkeypatch):
     set_mock_env(monkeypatch)
     set_mock_logger_builder(mocker)
 
-    req_body = {"query": "query", "llm_model_id": "OPENAI", "tags": [], "environment": "staging", "prompt_editor": []}
+    req_body = {"query": "query", "llm_model_id": "OPENAI", "tags": [], "environment": "staging", "prompt_editor": [], "model_name": "INPS_gpt4o"}
 
     mock_prompt_data = PromptEditorResponseBody(
         version="1",
@@ -377,7 +377,7 @@ async def test_query_ko(mocker, monkeypatch):
         label="tag",
         validation_messages=[],
     )
-    req_body = {"query": "query", "llm_model_id": "model", "tags": [], "environment": "staging", "prompt_editor": []}
+    req_body = {"query": "query", "llm_model_id": "model", "tags": [], "environment": "staging", "prompt_editor": [], "model_name": "INPS_gpt4o"}
 
     mock_language_service = mocker.Mock()
     mocker.patch("rag_query.AiQueryServiceFactory.get_instance", return_value=mock_language_service)
@@ -437,7 +437,7 @@ async def test_query_missing_environment_variables(mocker, monkeypatch):
     set_mock_env(monkeypatch)
     set_mock_logger_builder(mocker)
 
-    req_body = {"question": "question", "tags": [], "environment": "staging"}
+    req_body = {"question": "question", "tags": [], "environment": "staging", "model_name": "INPS_gpt4o"}
     req = func.HttpRequest(
         method="POST",
         headers={"Content-Type": "application/json"},

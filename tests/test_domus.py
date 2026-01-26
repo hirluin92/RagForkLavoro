@@ -137,7 +137,8 @@ async def test_check_msd_question_no_domus_no_protocollo(mocker, monkeypatch):
         user_fiscal_code="ABCDEF12G34H567I",
         token="fake-token",
         query="qual è lo stato delle mie domande",
-        llm_model_id="OPENAI" 
+        llm_model_id="OPENAI",
+        model_name="INPS_gpt4o"
     )
 
     # intent_result con nessun numero_domus e numero_protocollo

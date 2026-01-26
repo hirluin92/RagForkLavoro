@@ -19,8 +19,20 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
     with LoggerBuilder(__name__, context) as logger:
         logger.info("Augment query request")
 
+    # Validazione body JSON PRIMA di handle_access_control per ottenere model_name
     try:
-        consumer = access_control = await handle_access_control(req, logger)
+        req_body = req.get_json()
+        request = RagOrchestratorRequest.model_validate(req_body)
+    except ValidationError as e:
+        problem = Problem(422, "Bad Request", e.errors(), None, None)
+        return func.HttpResponse(json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json")
+    except Exception as e:
+        problem = Problem(422, "Bad Request", f"Invalid JSON body: {str(e)}", None, None)
+        return func.HttpResponse(json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json")
+
+    try:
+        # Passa model_name a handle_access_control
+        consumer = access_control = await handle_access_control(req, logger, model_name=request.model_name)
 
         get_mistralai_settings()
         get_mssql_settings()
@@ -30,10 +42,12 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
         problem = Problem(500, "Invalid configuration", e.errors(), None, None)
         logger.exception("Invalid configuration")
         return func.HttpResponse(json.dumps(problem.to_dict()), status_code=500, mimetype="application/problem+json")
+    except Exception as e:
+        logger.exception(str(e))
+        problem = Problem(500, "Internal server error", str(e), None, None)
+        return func.HttpResponse(json.dumps(problem.to_dict()), status_code=500, mimetype="application/problem+json")
 
     try:
-        req_body = req.get_json()
-        request = RagOrchestratorRequest.model_validate(req_body)
 
         # Get AI service (OpenAI or Mistral)
         language_service = AiQueryServiceFactory.get_instance(request.llm_model_id)
@@ -58,11 +72,11 @@ async def a_augment_query(req: func.HttpRequest, context: func.Context) -> func.
         problem = Problem(422, "Bad Request", e.errors(), None, None)
         return func.HttpResponse(json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json")
     except ValueError as ve:
-            problem = Problem(422, "Bad Request", str(ve), None, None)
-            return func.HttpResponse(
-                json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json"
-            )
+        problem = Problem(422, "Bad Request", str(ve), None, None)
+        return func.HttpResponse(
+            json.dumps(problem.to_dict()), status_code=422, mimetype="application/problem+json"
+        )
     except Exception as e:
-        logger.exception(e.args[0])
-        problem = Problem(500, "Internal server error", e.args[0], None, None)
+        logger.exception(str(e))
+        problem = Problem(500, "Internal server error", str(e), None, None)
         return func.HttpResponse(json.dumps(problem.to_dict()), status_code=500, mimetype="application/problem+json")

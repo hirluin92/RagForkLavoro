@@ -322,12 +322,15 @@ async def test_get_complete_config_with_model_name(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_deployment_config_database_error():
+async def test_get_deployment_config_database_error(monkeypatch):
     """Test errore connessione database"""
-    import aioodbc
+    import pyodbc
+    
+    monkeypatch.setenv("SQL_CONNECTION_STRING", "Driver={ODBC Driver 17 for SQL Server};Server=tcp:test,1433;Database=test;Uid=test;Pwd=test;")
     
     with patch('aioodbc.connect') as mock_connect:
-        mock_connect.side_effect = aioodbc.Error("Connection failed")
+        # Simula errore di connessione usando pyodbc.Error
+        mock_connect.side_effect = pyodbc.Error("Connection failed")
         
         with pytest.raises(DatabaseConnectionError) as exc_info:
             await a_get_deployment_config("MS00987", "INPS_gpt4o")

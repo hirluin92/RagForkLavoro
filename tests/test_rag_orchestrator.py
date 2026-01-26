@@ -49,6 +49,9 @@ async def test_query_no_configuration(mocker, monkeypatch):
 
     mock_trace_context = mocker.Mock()
     mocker.patch("utils.settings.get_openai_settings", side_effect=ValidationError)
+    # Mock handle_access_control per evitare connessioni reali al database
+    mock_consumer = LLMConsumer("test_consumer", "1234567890abcdef")
+    mocker.patch("rag_orchestrator.handle_access_control", return_value=mock_consumer)
 
     # Act
     func_call = ragOrchestrator_endpoint.build().get_user_function()
@@ -70,12 +73,15 @@ async def test_query_no_body(mocker, monkeypatch):
     )
 
     mock_trace_context = mocker.Mock()
+    # Mock handle_access_control per evitare connessioni reali al database
+    mock_consumer = LLMConsumer("test_consumer", "1234567890abcdef")
+    mocker.patch("rag_orchestrator.handle_access_control", return_value=mock_consumer)
 
     # Act
     func_call = ragOrchestrator_endpoint.build().get_user_function()
     response = await func_call(req, mock_trace_context)
     # Assert
-    assert response.status_code == 500
+    assert response.status_code == 422  # Cambiato da 500 a 422 perché ora validiamo il body prima
 
 
 @pytest.mark.asyncio
@@ -91,7 +97,7 @@ async def test_query_missing_environment_variables(mocker, monkeypatch):
 
     set_mock_logger_builder(mocker)
 
-    req_body = {"question": "question", "tags": ["auu"]}
+    req_body = {"question": "question", "tags": ["auu"], "model_name": "INPS_gpt4o"}
     req = func.HttpRequest(
         method="POST",
         headers={"Content-Type": "application/json"},
@@ -100,6 +106,10 @@ async def test_query_missing_environment_variables(mocker, monkeypatch):
     )
 
     mock_trace_context = mocker.Mock()
+    # Mock handle_access_control per evitare connessioni reali al database
+    mock_consumer = LLMConsumer("test_consumer", "1234567890abcdef")
+    mocker.patch("rag_orchestrator.handle_access_control", return_value=mock_consumer)
+    
     # Act
     func_call = ragOrchestrator_endpoint.build().get_user_function()
     response = await func_call(req, mock_trace_context)
@@ -114,7 +124,7 @@ async def test_query_missing_body_value_question(mocker, monkeypatch):
 
     set_mock_logger_builder(mocker)
 
-    req_body = {"tags": ["auu"]}
+    req_body = {"tags": ["auu"], "model_name": "INPS_gpt4o"}
     req = func.HttpRequest(
         method="POST",
         headers={"Content-Type": "application/json"},
@@ -419,6 +429,7 @@ async def test_rag_orchestrator_no_tags(mocker, monkeypatch):
         llm_model_id="OPENAI",
         tags=["auu"],
         environment="staging",
+        model_name="INPS_gpt4o",
         configuration=RagConfiguration(enable_cqa=True, enable_enrichment=True),
     )
     
@@ -503,6 +514,7 @@ async def test_get_query_response_cqa_fail_then_succeed(mocker, monkeypatch):
         interactions=[Interaction(question="fake", answer="fake")],
         tags=["auu"],
         environment="staging",
+        model_name="INPS_gpt4o",
     )
 
     # Simula le impostazioni MSSQL
@@ -610,6 +622,7 @@ async def test_get_query_response_cqa_fail_twice_then_llm_succeed(mocker, monkey
         interactions=[Interaction(question="fake", answer="fake")],
         tags=["auu"],
         environment="staging",
+        model_name="INPS_gpt4o",
     )
 
     # Simula le impostazioni MSSQL
@@ -712,6 +725,7 @@ async def test_intent_recognition_altro(mocker, monkeypatch):
         tags=["test_tag"],
         interactions=[{"question": "fake", "answer": "fake"}],
         environment="staging",
+        model_name="INPS_gpt4o",
     )
 
     # Simula le impostazioni MSSQL
@@ -844,6 +858,7 @@ async def test_intent_recognition_authenticated_user(mocker, monkeypatch):
         user_fiscal_code="TESTFISCALCODE",
         token="test_token",
         environment="staging",
+        model_name="INPS_gpt4o",
     )
 
     # Simula le impostazioni MSSQL
