@@ -28,7 +28,7 @@ async def test_query_no_body(mocker, monkeypatch):
     func_call = rag_augmentQuery_endpoint.build().get_user_function()
     response = await func_call(req, mock_trace_context)
     # Assert
-    assert response.status_code == 500
+    assert response.status_code == 422  # Cambiato da 500 a 422 perché ora validiamo il body prima
 
 @pytest.mark.asyncio
 async def test_query_no_caller_service(mocker, monkeypatch):
@@ -49,7 +49,7 @@ async def test_query_no_caller_service(mocker, monkeypatch):
     func_call = rag_augmentQuery_endpoint.build().get_user_function()
     response = await func_call(req, mock_trace_context)
     # Assert
-    assert response.status_code == 500
+    assert response.status_code == 422  # Cambiato da 500 a 422 perché ora validiamo il body prima
    
 @pytest.mark.asyncio
 async def test_query_missing_body_value_question(mocker, monkeypatch):

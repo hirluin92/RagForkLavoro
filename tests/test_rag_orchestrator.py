@@ -58,7 +58,7 @@ async def test_query_no_configuration(mocker, monkeypatch):
     response = await func_call(req, mock_trace_context)
 
     # Assert
-    assert response.status_code == 500
+    assert response.status_code == 422  # Cambiato da 500 a 422 perché ora validiamo il body prima di handle_access_control
 
 
 @pytest.mark.asyncio
@@ -389,6 +389,7 @@ async def test_rag_orchestrator_cqa_success(mocker, monkeypatch):
         llm_model_id="OPENAI",
         tags=["auu"],
         environment="staging",
+        model_name="INPS_gpt4o",
         configuration=RagConfiguration(enable_cqa=True, enable_enrichment=True),
     )
     result = await logics.rag_orchestrator.a_get_query_response(
