@@ -56,13 +56,11 @@ async def a_get_deployment_config(
         DatabaseConnectionError: errore connessione SQL
         IncompleteConfigError: campi NULL nella configurazione
     """
-    # Prova prima con ConnectionStrings_DatabaseSql (formato Azure Portal)
-    # poi fallback a SQL_CONNECTION_STRING per retrocompatibilità
-    connection_string = os.getenv("ConnectionStrings_DatabaseSql") or os.getenv("SQL_CONNECTION_STRING")
+    connection_string = os.getenv("ConnectionStrings_DatabaseSql")
     
     if not connection_string:
-        logger.error("ConnectionStrings_DatabaseSql o SQL_CONNECTION_STRING non configurata")
-        raise DatabaseConnectionError("ConnectionStrings_DatabaseSql o SQL_CONNECTION_STRING mancante nelle variabili d'ambiente")
+        logger.error("ConnectionStrings_DatabaseSql non configurata")
+        raise DatabaseConnectionError("ConnectionStrings_DatabaseSql mancante nelle variabili d'ambiente")
     
     try:
         # aioodbc.connect() accetta dsn anche con connection string completa

@@ -356,17 +356,14 @@ async def test_get_deployment_config_database_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_get_deployment_config_missing_env_var(monkeypatch):
     """Test mancanza ConnectionStrings_DatabaseSql"""
-    # Rimuovi le variabili se esistono (il fixture autouse potrebbe averle impostate)
+    # Rimuovi la variabile se esiste (il fixture autouse potrebbe averla impostata)
     monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=False)
-    monkeypatch.delenv("SQL_CONNECTION_STRING", raising=False)
-    # Assicurati che non siano impostate
+    # Assicurati che non sia impostata
     import os
     if "ConnectionStrings_DatabaseSql" in os.environ:
         monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=True)
-    if "SQL_CONNECTION_STRING" in os.environ:
-        monkeypatch.delenv("SQL_CONNECTION_STRING", raising=True)
     
     with pytest.raises(DatabaseConnectionError) as exc_info:
         await a_get_deployment_config("MS00987", "INPS_gpt4o")
     
-    assert "ConnectionStrings_DatabaseSql" in str(exc_info.value) or "SQL_CONNECTION_STRING" in str(exc_info.value)
+    assert "ConnectionStrings_DatabaseSql" in str(exc_info.value)
