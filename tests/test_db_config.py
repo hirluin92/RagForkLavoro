@@ -359,12 +359,19 @@ async def test_get_deployment_config_database_error(monkeypatch):
 @pytest.mark.skip_mock_env
 async def test_get_deployment_config_missing_env_var(monkeypatch):
     """Test mancanza ConnectionStrings_DatabaseSql"""
-    # Assicurati che la variabile non sia impostata
-    # Il fixture autouse dovrebbe saltare questo test grazie al marker skip_mock_env
-    monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=False)
+    # Mock os.getenv per restituire None quando viene chiamato con ConnectionStrings_DatabaseSql
+    # Questo bypassa completamente il problema del fixture autouse
+    import os
+    original_getenv = os.getenv
+    
+    def mock_getenv(key, default=None):
+        if key == "ConnectionStrings_DatabaseSql":
+            return None
+        return original_getenv(key, default)
+    
+    monkeypatch.setattr(os, "getenv", mock_getenv)
     
     # Verifica che la variabile non sia impostata
-    import os
     assert os.getenv("ConnectionStrings_DatabaseSql") is None
     
     with pytest.raises(DatabaseConnectionError) as exc_info:
