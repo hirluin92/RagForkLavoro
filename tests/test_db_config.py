@@ -77,7 +77,9 @@ def clear_cache(mocker):
 def mock_env_vars(monkeypatch, request):
     """Mock SQL_CONNECTION_STRING environment variable (skip for test_get_deployment_config_missing_env_var)"""
     # Skip per test_get_deployment_config_missing_env_var che deve testare la mancanza della variabile
-    if "test_get_deployment_config_missing_env_var" not in request.node.name:
+    # Usa request.node.originalname per ottenere il nome originale del test
+    test_name = getattr(request.node, 'originalname', None) or request.node.name
+    if "test_get_deployment_config_missing_env_var" not in test_name:
         monkeypatch.setenv("SQL_CONNECTION_STRING", "Server=test;Database=test;User=test;Password=test")
 
 
@@ -207,22 +209,23 @@ async def test_get_deployment_config_incomplete_config():
         "llm"  # type
     )
     
-    with patch('aioodbc.connect') as mock_connect:
-        mock_cursor = AsyncMock()
-        mock_cursor.fetchone = AsyncMock(return_value=mock_row)
-        mock_cursor.execute = AsyncMock()
-        mock_cursor.__aenter__ = AsyncMock(return_value=mock_cursor)
-        mock_cursor.__aexit__ = AsyncMock(return_value=None)
-        
-        mock_conn = AsyncMock()
-        mock_conn.cursor = MagicMock(return_value=mock_cursor)
-        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_conn.__aexit__ = AsyncMock(return_value=None)
-        
-        # Mock aioodbc.connect come context manager
-        mock_connect.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_connect.return_value.__aexit__ = AsyncMock(return_value=None)
-        
+    # Crea un mock context manager per aioodbc.connect()
+    mock_conn_context = AsyncMock()
+    mock_cursor = AsyncMock()
+    mock_cursor.fetchone = AsyncMock(return_value=mock_row)
+    mock_cursor.execute = AsyncMock()
+    mock_cursor.__aenter__ = AsyncMock(return_value=mock_cursor)
+    mock_cursor.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_conn = AsyncMock()
+    mock_conn.cursor = MagicMock(return_value=mock_cursor)
+    mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_conn.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_conn_context.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_conn_context.__aexit__ = AsyncMock(return_value=None)
+    
+    with patch('aioodbc.connect', return_value=mock_conn_context):
         with pytest.raises(IncompleteConfigError) as exc_info:
             await a_get_deployment_config("MS00987", "INPS_gpt4o")
         
@@ -291,23 +294,23 @@ async def test_get_complete_config_with_model_name(monkeypatch):
     mock_secret = MagicMock()
     mock_secret.value = "api-key-xyz"
     
-    with patch('aioodbc.connect') as mock_connect:
-        # Setup SQL mock
-        mock_cursor = AsyncMock()
-        mock_cursor.fetchone = AsyncMock(return_value=mock_sql_row)
-        mock_cursor.execute = AsyncMock()
-        mock_cursor.__aenter__ = AsyncMock(return_value=mock_cursor)
-        mock_cursor.__aexit__ = AsyncMock(return_value=None)
-        
-        mock_conn = AsyncMock()
-        mock_conn.cursor = MagicMock(return_value=mock_cursor)
-        mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_conn.__aexit__ = AsyncMock(return_value=None)
-        
-        # Mock aioodbc.connect come context manager
-        mock_connect.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_connect.return_value.__aexit__ = AsyncMock(return_value=None)
-        
+    # Crea un mock context manager per aioodbc.connect()
+    mock_conn_context = AsyncMock()
+    mock_cursor = AsyncMock()
+    mock_cursor.fetchone = AsyncMock(return_value=mock_sql_row)
+    mock_cursor.execute = AsyncMock()
+    mock_cursor.__aenter__ = AsyncMock(return_value=mock_cursor)
+    mock_cursor.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_conn = AsyncMock()
+    mock_conn.cursor = MagicMock(return_value=mock_cursor)
+    mock_conn.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_conn.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_conn_context.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_conn_context.__aexit__ = AsyncMock(return_value=None)
+    
+    with patch('aioodbc.connect', return_value=mock_conn_context):
         # Setup Key Vault mock
         monkeypatch.setattr("utils.db_config.SecretClient", lambda vault_url, credential: FakeSecretClient(
             vault_url=vault_url, 
@@ -338,13 +341,12 @@ async def test_get_deployment_config_database_error(monkeypatch):
     
     monkeypatch.setenv("SQL_CONNECTION_STRING", "Driver={ODBC Driver 17 for SQL Server};Server=tcp:test,1433;Database=test;Uid=test;Pwd=test;")
     
-    with patch('aioodbc.connect') as mock_connect:
-        # Simula errore di connessione usando pyodbc.Error
-        # aioodbc.connect() restituisce un context manager, quindi mockiamo il context manager per sollevare l'errore
-        mock_context_manager = AsyncMock()
-        mock_context_manager.__aenter__ = AsyncMock(side_effect=pyodbc.Error("Connection failed"))
-        mock_connect.return_value = mock_context_manager
-        
+    # Crea un mock context manager che solleva un errore quando viene entrato
+    mock_conn_context = AsyncMock()
+    mock_conn_context.__aenter__ = AsyncMock(side_effect=pyodbc.Error("Connection failed"))
+    mock_conn_context.__aexit__ = AsyncMock(return_value=None)
+    
+    with patch('aioodbc.connect', return_value=mock_conn_context):
         with pytest.raises(DatabaseConnectionError) as exc_info:
             await a_get_deployment_config("MS00987", "INPS_gpt4o")
         
@@ -354,7 +356,12 @@ async def test_get_deployment_config_database_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_get_deployment_config_missing_env_var(monkeypatch):
     """Test mancanza SQL_CONNECTION_STRING"""
+    # Rimuovi la variabile se esiste (il fixture autouse potrebbe averla impostata)
     monkeypatch.delenv("SQL_CONNECTION_STRING", raising=False)
+    # Assicurati che non sia impostata
+    import os
+    if "SQL_CONNECTION_STRING" in os.environ:
+        monkeypatch.delenv("SQL_CONNECTION_STRING", raising=True)
     
     with pytest.raises(DatabaseConnectionError) as exc_info:
         await a_get_deployment_config("MS00987", "INPS_gpt4o")
