@@ -75,12 +75,12 @@ def clear_cache(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch, request):
-    """Mock SQL_CONNECTION_STRING environment variable (skip for test_get_deployment_config_missing_env_var)"""
+    """Mock ConnectionStrings_DatabaseSql environment variable (skip for test_get_deployment_config_missing_env_var)"""
     # Skip per test_get_deployment_config_missing_env_var che deve testare la mancanza della variabile
     # Usa request.node.originalname per ottenere il nome originale del test
     test_name = getattr(request.node, 'originalname', None) or request.node.name
     if "test_get_deployment_config_missing_env_var" not in test_name:
-        monkeypatch.setenv("SQL_CONNECTION_STRING", "Server=test;Database=test;User=test;Password=test")
+        monkeypatch.setenv("ConnectionStrings_DatabaseSql", "Server=test;Database=test;User=test;Password=test")
 
 
 @pytest.mark.asyncio
@@ -339,7 +339,7 @@ async def test_get_deployment_config_database_error(monkeypatch):
     """Test errore connessione database"""
     import pyodbc
     
-    monkeypatch.setenv("SQL_CONNECTION_STRING", "Driver={ODBC Driver 17 for SQL Server};Server=tcp:test,1433;Database=test;Uid=test;Pwd=test;")
+    monkeypatch.setenv("ConnectionStrings_DatabaseSql", "Driver={ODBC Driver 17 for SQL Server};Server=tcp:test,1433;Database=test;Uid=test;Pwd=test;")
     
     # Crea un mock context manager che solleva un errore quando viene entrato
     mock_conn_context = AsyncMock()
@@ -355,15 +355,18 @@ async def test_get_deployment_config_database_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_deployment_config_missing_env_var(monkeypatch):
-    """Test mancanza SQL_CONNECTION_STRING"""
-    # Rimuovi la variabile se esiste (il fixture autouse potrebbe averla impostata)
+    """Test mancanza ConnectionStrings_DatabaseSql"""
+    # Rimuovi le variabili se esistono (il fixture autouse potrebbe averle impostate)
+    monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=False)
     monkeypatch.delenv("SQL_CONNECTION_STRING", raising=False)
-    # Assicurati che non sia impostata
+    # Assicurati che non siano impostate
     import os
+    if "ConnectionStrings_DatabaseSql" in os.environ:
+        monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=True)
     if "SQL_CONNECTION_STRING" in os.environ:
         monkeypatch.delenv("SQL_CONNECTION_STRING", raising=True)
     
     with pytest.raises(DatabaseConnectionError) as exc_info:
         await a_get_deployment_config("MS00987", "INPS_gpt4o")
     
-    assert "SQL_CONNECTION_STRING mancante" in str(exc_info.value)
+    assert "ConnectionStrings_DatabaseSql" in str(exc_info.value) or "SQL_CONNECTION_STRING" in str(exc_info.value)
