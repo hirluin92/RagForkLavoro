@@ -77,9 +77,11 @@ def clear_cache(mocker):
 def mock_env_vars(monkeypatch, request):
     """Mock ConnectionStrings_DatabaseSql environment variable (skip for test_get_deployment_config_missing_env_var)"""
     # Skip per test_get_deployment_config_missing_env_var che deve testare la mancanza della variabile
-    # Usa request.node.originalname per ottenere il nome originale del test
+    # Controlla sia il nome del test che eventuali marker
     test_name = getattr(request.node, 'originalname', None) or request.node.name
-    if "test_get_deployment_config_missing_env_var" not in test_name:
+    # Controlla anche se il test ha un marker specifico
+    skip_marker = request.node.get_closest_marker("skip_mock_env")
+    if "test_get_deployment_config_missing_env_var" not in test_name and skip_marker is None:
         monkeypatch.setenv("ConnectionStrings_DatabaseSql", "Server=test;Database=test;User=test;Password=test")
 
 
@@ -354,14 +356,16 @@ async def test_get_deployment_config_database_error(monkeypatch):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_mock_env
 async def test_get_deployment_config_missing_env_var(monkeypatch):
     """Test mancanza ConnectionStrings_DatabaseSql"""
-    # Rimuovi la variabile se esiste (il fixture autouse potrebbe averla impostata)
+    # Assicurati che la variabile non sia impostata
+    # Il fixture autouse dovrebbe saltare questo test grazie al marker skip_mock_env
     monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=False)
-    # Assicurati che non sia impostata
+    
+    # Verifica che la variabile non sia impostata
     import os
-    if "ConnectionStrings_DatabaseSql" in os.environ:
-        monkeypatch.delenv("ConnectionStrings_DatabaseSql", raising=True)
+    assert os.getenv("ConnectionStrings_DatabaseSql") is None
     
     with pytest.raises(DatabaseConnectionError) as exc_info:
         await a_get_deployment_config("MS00987", "INPS_gpt4o")
